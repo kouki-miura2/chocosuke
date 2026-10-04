@@ -15,13 +15,14 @@ interface BeforeInstallPromptEvent extends Event {
 const promptEvent = shallowRef<BeforeInstallPromptEvent | null>(null)
 const installed = ref(false)
 
-const runningInstalled = () =>
+/** Whether the app runs full screen from the home screen (an installed PWA), not in a browser tab. */
+export const runningStandalone = (): boolean =>
   window.matchMedia('(display-mode: standalone)').matches ||
   (navigator as { standalone?: boolean }).standalone === true
 
 /** Called once from `main.ts`, before anything is mounted. */
 export const listenForInstallPrompt = () => {
-  installed.value = runningInstalled()
+  installed.value = runningStandalone()
   window.addEventListener('beforeinstallprompt', (event) => {
     // Kept for the settings button instead of the browser's own banner.
     event.preventDefault()
