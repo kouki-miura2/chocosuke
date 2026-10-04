@@ -12,35 +12,37 @@ table entry.
 
 Worked references:
 
-- `src/views/SampleView.vue` — a view with no server data, using a Pinia store directly.
-- `src/views/HomeView.vue` + `src/composables/useSampleQuery.ts` — a view backed by server data
-  via TanStack Query, reacting to a query error through a Pinia store.
+- `src/views/LegalView.vue` — a view with no server data.
+- `src/views/SchedulesView.vue` — a view reading the synced data through `useAppData()` and
+  changing it through `useScheduleMutations()` (each change is followed by a sync).
+- `src/views/InviteView.vue` + `useInviteQuery` (`src/composables/useGroupMutations.ts`) — a
+  view with its own query, showing its error itself (`meta: { quiet: true }`).
 - `src/router/routes.ts` / `src/router/routes.test.ts` — the route table and its test.
 
 ## Procedure
 
 ### 1. Decide what state the view needs
 
-- **Server data** (API responses): a composable in `src/composables/` wrapping `useQuery`/
-  `useMutation` — never call the API client inline in the component. See step 2.
-- **Global UI state** shared app-wide (auth, theme, notifications, ...): a Pinia store in
-  `src/stores/`, setup-function style. Only add a new store if an existing one
-  (`src/stores/notification.ts`) doesn't already cover it — don't create a store for state that's
-  local to this view.
+- **Server data** (API responses): most screens only read the synced data (`useAppData()`) and
+  change it with a mutation composable (`use*Mutations.ts`, built on `useSyncingMutation`). A
+  composable in `src/composables/` wraps any other `useQuery`/`useMutation` — never call the API
+  client inline in the component. See step 2.
+- **Global UI state** shared app-wide (auth, view state, notifications, ...): a Pinia store in
+  `src/stores/`, setup-function style. Only add a new store if an existing one doesn't already
+  cover it — don't create a store for state that's local to this view.
 - **Local/component state** (form inputs, modal open/closed): plain `ref()`/`reactive()` inside
   the view or a composable — doesn't need a store.
 
 A view can need none, either, or both of the first two.
 
-### 2. Add a query composable (only if the view needs server data)
+### 2. Add a query or mutation composable (only if the view needs new server calls)
 
-- `src/composables/use<Name>Query.ts` — wraps `useQuery` (or `useMutation`), calling the Hono RPC
-  `apiClient` from `src/api/client.ts`. Accept an optional `queryClient` param, passed through to
-  `useQuery` as the second argument, purely so tests can run it outside a mounted app (see
-  `useSampleQuery.ts`).
-- `src/composables/use<Name>Query.test.ts` — co-located test: `vi.mock('../api/client.ts', ...)`,
-  run the composable inside `effectScope().run(...)` with an explicit throwaway `QueryClient`
-  (`retry: false`), and await state with `vi.waitFor(...)` (see `useSampleQuery.test.ts`).
+- Wrap each API call in `call()` (`src/api/call.ts`) so errors become `ApiError` and reach the
+  snackbar through the `QueryClient`.
+- A change to synced data: add it to the domain's `use*Mutations.ts` with `useSyncingMutation`.
+- Anything else: a `use<Name>Query` composable wrapping `useQuery`.
+- Put the rules (validation, ordering, formatting) in a pure function under `src/lib/` with a
+  co-located test; the composable and the view stay thin.
 
 ### 3. Create the view
 
@@ -55,15 +57,16 @@ A view can need none, either, or both of the first two.
 - Add `{ path: '/<path>', name: '<name>', component: () => import('../views/<Name>View.vue') }`
   to `src/router/routes.ts`. Keep the component import lazy (arrow function), matching the
   existing entries.
+- Set `meta.public` if it is reachable signed out, `meta.nav` if it shows the bottom navigation.
 - Extend `src/router/routes.test.ts` with a case resolving the new path to the new route name
-  (see the existing `resolves the sample route` test). Use `router.resolve(...)`, not
+  (see the existing `resolves each screen` test). Use `router.resolve(...)`, not
   `router.push(...)` — `push` actually loads the lazy component, which drags in Vuetify's CSS and
   breaks under Node's module loader.
 
 ### 5. Link it from navigation (if the view should be reachable from the UI)
 
-- Add a `<v-btn to="/<path>" text="..." />` (or equivalent) to `App.vue`'s app bar, alongside the
-  existing `Home`/`Sample` links.
+- A main screen: add it to the bottom navigation `tabs` in `App.vue`. Otherwise link it from the
+  screen it belongs to.
 
 ### 6. Validate
 
@@ -83,5 +86,5 @@ DOM-free ceiling for what this view can be unit-tested with. To see the screen i
   `routes.test.ts`) — never a separate `test/` or `__tests__/` tree.
 - API request/response types come from `apps/backend`'s `AppType` via Hono RPC — never hand-write
   a DTO for the response a composable consumes.
-- `SampleView.vue` / `HomeView.vue` and their supporting files are reference implementations, not
-  fixed scaffolding to keep around forever — follow their shape, don't just import from them.
+- To see the screen, run `vp run backend-worker#dev` and `vp run frontend#dev`, and sign in with
+  the development login (no Google client id needed).

@@ -1,21 +1,59 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+
 import { useNotificationStore } from './stores/notification.ts'
 
 const notification = useNotificationStore()
-const appTitle = import.meta.env.VITE_APP_TITLE
+const route = useRoute()
+const showNav = computed(() => route.meta.nav === true)
+
+const tabs = [
+  { to: '/', icon: 'mdi-calendar-month', label: 'カレンダー' },
+  { to: '/schedules', icon: 'mdi-label-outline', label: '予定' },
+  { to: '/group', icon: 'mdi-account-group-outline', label: 'グループ' },
+  { to: '/settings', icon: 'mdi-cog-outline', label: '設定' },
+]
 </script>
 
 <template>
   <v-app>
-    <v-app-bar :title="appTitle">
-      <template #append>
-        <v-btn to="/" text="Home" />
-        <v-btn to="/sample" text="Sample" />
-      </template>
-    </v-app-bar>
     <v-main>
       <router-view />
     </v-main>
-    <v-snackbar v-model="notification.visible">{{ notification.message }}</v-snackbar>
+    <v-bottom-navigation v-if="showNav" grow color="primary">
+      <v-btn v-for="tab in tabs" :key="tab.to" :to="tab.to" :value="tab.to" exact rounded="0">
+        <v-icon :icon="tab.icon" />
+        <span>{{ tab.label }}</span>
+      </v-btn>
+    </v-bottom-navigation>
+    <v-snackbar v-model="notification.visible" location="bottom" :timeout="4000">
+      {{ notification.message }}
+    </v-snackbar>
+    <!-- docs/spec.md "共通ルール > 画面": a phone held sideways asks to turn it back. -->
+    <div class="portrait-only">
+      <v-icon icon="mdi-phone-rotate-portrait" size="48" />
+      <p>縦向きでご利用ください</p>
+    </div>
   </v-app>
 </template>
+
+<style scoped>
+.portrait-only {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 599px) {
+  .portrait-only {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: rgb(var(--v-theme-background));
+  }
+}
+</style>

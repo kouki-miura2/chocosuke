@@ -11,21 +11,31 @@
     "preview": "vp preview"
   },
   "dependencies": {
+    "@holiday-jp/holiday_jp": "catalog:",
     "@mdi/font": "catalog:",
     "@tanstack/vue-query": "catalog:",
     "hono": "^4.13.7",
+    "idb": "catalog:",
     "pinia": "^4.0.3",
+    "qrcode": "catalog:",
+    "utils": "workspace:*",
     "vue": "^3.5.43",
+    "vue-draggable-plus": "catalog:",
     "vue-router": "^5.3.1",
     "vuetify": "^4.2.1"
   },
   "devDependencies": {
+    "@types/qrcode": "catalog:",
     "@vitejs/plugin-vue": "^6.0.9",
     "backend": "workspace:*",
+    "fake-indexeddb": "catalog:",
     "typescript": "^6.0.3",
     "vite": "catalog:",
+    "vite-plugin-pwa": "catalog:",
     "vite-plugin-vuetify": "^2.1.3",
     "vite-plus": "catalog:",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.11",
+    "workbox-precaching": "catalog:",
+    "workbox-routing": "catalog:"
   }
 }

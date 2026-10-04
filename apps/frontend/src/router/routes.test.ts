@@ -3,26 +3,21 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { routes } from './routes.ts'
 
-test('resolves the home route', () => {
-  const router = createRouter({ history: createMemoryHistory(), routes })
+const router = createRouter({ history: createMemoryHistory(), routes })
 
-  const resolved = router.resolve('/')
-
-  expect(resolved.name).toBe('home')
+test('resolves each screen', () => {
+  expect(router.resolve('/').name).toBe('calendar')
+  expect(router.resolve('/events/e1/edit').params).toEqual({ id: 'e1' })
+  expect(router.resolve('/invite/abc').name).toBe('invite')
+  expect(router.resolve('/settings').meta.nav).toBe(true)
 })
 
-test('resolves the sample route', () => {
-  const router = createRouter({ history: createMemoryHistory(), routes })
+test('leaves only the sign-in, consent and legal screens public', () => {
+  const publicNames = routes.filter((route) => route.meta?.public).map((route) => route.name)
 
-  const resolved = router.resolve('/sample')
-
-  expect(resolved.name).toBe('sample')
+  expect(publicNames).toEqual(['login', 'consent', 'terms', 'privacy'])
 })
 
-test('has no match for an unknown path', () => {
-  const router = createRouter({ history: createMemoryHistory(), routes })
-
-  const resolved = router.resolve('/does-not-exist')
-
-  expect(resolved.matched).toHaveLength(0)
+test('sends an unknown path to the calendar', () => {
+  expect(router.resolve('/does-not-exist').matched[0].redirect).toBe('/')
 })
