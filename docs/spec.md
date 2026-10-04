@@ -533,6 +533,7 @@ Calendar-based schedule management app.
   - 画面と API を同じオリジンで配信する。画面は `/`、API は `/api` 配下。
 - 認証
   - Googleでログイン（Google Identity Services）。APIでIDトークンを検証し、署名付きのセッションCookie（HttpOnly・Secure・SameSite=Lax）を発行する。セッションはDBに保存しない（読み取り行数を増やさないため）。
+  - 未登録のアカウントにはセッションを発行せず、同意画面のあとの登録API（IDトークンと同意した規約のバージョン）でユーザーを作成する（「ログイン・同意」参照）。
 - 通知
   - Web Push（VAPID）。VAPIDの秘密鍵はWorkersのシークレットで管理する。
 - プラン
@@ -688,4 +689,4 @@ Calendar-based schedule management app.
 - **利用規約・プライバシーポリシー:** 本文はフロントエンドに静的ページとして同梱する。現在のバージョンは改定日（`YYYY-MM-DD`）とし、コード上の定数（`packages/utils/src/terms/terms.ts` の `TERMS_VERSION`）で管理する。本文を変えたら改定日に更新する。
 - **祝日・休日:** フロントエンドに同梱したライブラリで判定する。
 - **予定の色（12色）:** フロントエンドの定数で管理する。DBにはキーのみ保存する。
-- **VAPID鍵・Google OAuth クライアントID・セッション署名鍵:** Workers のシークレット / 環境変数。
+- **VAPID鍵・Google OAuth クライアントID・セッション署名鍵:** Workers のシークレット。公開してよい値（クライアントID・VAPID公開鍵）は、フロントエンドにもビルド時の環境変数で渡す（ルートの `AGENTS.md`「Public config values for the frontend」）。
