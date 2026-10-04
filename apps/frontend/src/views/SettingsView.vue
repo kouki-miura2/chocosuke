@@ -7,6 +7,8 @@ import CsvDialog from '../components/CsvDialog.vue'
 import { useAccountMutations } from '../composables/useAccountMutations.ts'
 import { useAuth } from '../composables/useAuth.ts'
 import { needsHomeScreen, pushSupported, usePush, vapidPublicKey } from '../composables/usePush.ts'
+import { usePwaInstall } from '../composables/usePwaInstall.ts'
+import type { InstallGuide } from '../lib/install.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 import { useViewStateStore } from '../stores/view-state.ts'
 
@@ -37,6 +39,13 @@ const togglePush = async (on: boolean | null) => {
   }
 }
 
+// Install: the browser's prompt where there is one, else a dialog on how to add the app by hand.
+const pwa = usePwaInstall()
+const installGuide = ref<InstallGuide | null>(null)
+const install = async () => {
+  installGuide.value = await pwa.install()
+}
+
 const csvOpen = ref(false)
 const confirming = ref<'logout' | 'clear' | 'withdraw' | null>(null)
 
@@ -65,13 +74,7 @@ const leave = async () => {
       <v-list-subheader>表示</v-list-subheader>
       <v-list-item title="月表示のイベント">
         <template #append>
-          <v-btn-toggle
-            v-model="viewState.monthStyle"
-            mandatory
-            density="compact"
-            variant="outlined"
-            divided
-          >
+          <v-btn-toggle v-model="viewState.monthStyle" mandatory density="compact">
             <v-btn value="bar" text="バー" />
             <v-btn value="dot" text="ドット" />
           </v-btn-toggle>
@@ -79,13 +82,7 @@ const leave = async () => {
       </v-list-item>
       <v-list-item title="週の始まり">
         <template #append>
-          <v-btn-toggle
-            v-model="viewState.weekStart"
-            mandatory
-            density="compact"
-            variant="outlined"
-            divided
-          >
+          <v-btn-toggle v-model="viewState.weekStart" mandatory density="compact">
             <v-btn :value="0" text="日曜日" />
             <v-btn :value="1" text="月曜日" />
           </v-btn-toggle>
@@ -115,6 +112,13 @@ const leave = async () => {
       />
 
       <v-list-subheader>このアプリについて</v-list-subheader>
+      <v-list-item
+        v-if="!pwa.installed.value"
+        prepend-icon="mdi-cellphone-arrow-down"
+        title="アプリをインストール"
+        subtitle="ホーム画面から全画面で開けます"
+        @click="install"
+      />
       <v-list-item prepend-icon="mdi-file-document-outline" title="利用規約" to="/terms" />
       <v-list-item
         prepend-icon="mdi-shield-account-outline"
@@ -138,6 +142,28 @@ const leave = async () => {
     </v-list>
 
     <CsvDialog v-model="csvOpen" />
+    <v-dialog
+      :model-value="installGuide !== null"
+      max-width="400"
+      @update:model-value="installGuide = null"
+    >
+      <v-card title="ホーム画面に追加する">
+        <v-card-text v-if="installGuide === 'ios'">
+          Safari の共有ボタン（<v-icon
+            icon="mdi-export-variant"
+            size="18"
+          />）をタップし、「ホーム画面に追加」を選んでください。「Webアプリとして開く」はオンのままにします。
+        </v-card-text>
+        <v-card-text v-else>
+          ブラウザのメニューから「アプリをインストール」または「ホーム画面に追加」を選んでください。見つからない場合は、Chrome・Edge・Safari
+          で開いてください。
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text="閉じる" @click="installGuide = null" />
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <ConfirmDialog
       :model-value="confirming === 'logout'"
       title="ログアウトしますか？"

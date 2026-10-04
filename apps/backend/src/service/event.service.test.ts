@@ -46,6 +46,8 @@ const storedEvent = (fields: Partial<Event>): Event => ({
   notifyMinutes: null,
   notifyAt: null,
   memo: null,
+  location: null,
+  url: null,
   updatedBy: 'u1',
   createdAt: 0,
   updatedAt: 0,
@@ -65,6 +67,8 @@ const input = (fields: Partial<EventInput> = {}): EventInput => ({
   endTime: '11:00',
   notifyMinutes: null,
   memo: null,
+  location: null,
+  url: null,
   ...fields,
 })
 
@@ -96,7 +100,7 @@ const create = (fields: Partial<EventInput>, events: Event[] = []) => {
 test.each([
   ['an all-day event with a time', { allDay: true, endTime: null }],
   ['a timed event without a time', { endTime: null }],
-  ['a time off the 5-minute grid', { startTime: '10:03' }],
+  ['a time off the 10-minute step', { startTime: '10:05' }],
   ['an end not after the start', { endTime: '10:00' }],
   ['a date before 2021', { startDate: '2020-12-31', endDate: '2020-12-31' }],
   ['a date after the current year + 3', { startDate: '2030-01-01', endDate: '2030-01-01' }],
@@ -142,15 +146,37 @@ test('stores when to notify, and nothing for a time already past', async () => {
     ],
   ])
 
-  // Starts 10:05 JST today; "1 day before" was yesterday, already past at `now`.
+  // Starts 10:10 JST today; "1 day before" was yesterday, already past at `now`.
   const past = create({
     startDate: '2026-10-04',
     endDate: '2026-10-04',
-    startTime: '10:05',
+    startTime: '10:10',
     notifyMinutes: 1440,
   })
   await past.result
   expect(past.commit.mock.calls[0][1]).toMatchObject([{ values: { notify_at: null } }])
+})
+
+test('stores the location', async () => {
+  const created = create({ location: '札幌市中央区北1条西2丁目' })
+  await created.result
+  expect(created.commit.mock.calls[0][1]).toMatchObject([
+    { values: { location: '札幌市中央区北1条西2丁目' } },
+  ])
+})
+
+test('keeps a time saved off the 10-minute step, but takes no new one', async () => {
+  // Saved when times were in 5-minute steps.
+  const saved = storedEvent({ startTime: '10:05', endTime: '11:05' })
+  const update = (fields: Partial<EventInput>) =>
+    createEventService(fakeStore([saved]).store, images, runtime).updateEvent(
+      'u1',
+      'e0',
+      input({ startTime: '10:05', endTime: '11:05', ...fields }),
+    )
+
+  await expect(update({ title: '打合せ（変更）' })).resolves.toEqual({ id: 'e0' })
+  await expect(update({ endTime: '11:15' })).rejects.toMatchObject({ code: 'VALIDATION' })
 })
 
 test('reports a schedule of someone else as not found', async () => {

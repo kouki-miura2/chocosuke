@@ -41,6 +41,8 @@ const download = async () => {
             endDate: event.endDate,
             endTime: event.endTime,
             notify: notifyLabel(event.notifyMinutes),
+            location: event.location,
+            url: event.url,
             memo: event.memo,
             updatedBy: schedule.scope === 'group' ? app.memberName(event.updatedBy) : '',
             updatedAt: formatDateTime(event.updatedAt),

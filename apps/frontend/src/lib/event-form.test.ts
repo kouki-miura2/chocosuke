@@ -6,7 +6,9 @@ import {
   type EventForm,
   emptyEventForm,
   notifyOptions,
+  TIME_OPTIONS,
   shiftEndDate,
+  timeOptions,
   toEventInput,
   validateEventForm,
 } from './event-form.ts'
@@ -29,6 +31,37 @@ test('accepts a valid form and builds the API input', () => {
     memo: null,
     topicName: '会議',
   })
+  expect(toEventInput(form({ location: ' 札幌駅 ' })).location).toBe('札幌駅')
+  expect(toEventInput(form({ location: '  ' })).location).toBeNull()
+})
+
+test('takes only an http(s) URL', () => {
+  expect(validateEventForm(form({ url: ' https://example.com/matsuri ' }), [], now)).toEqual([])
+  expect(toEventInput(form({ url: ' https://example.com/matsuri ' })).url).toBe(
+    'https://example.com/matsuri',
+  )
+  expect(validateEventForm(form({ url: 'javascript:alert(1)' }), [], now)).toContain(
+    'URLは http:// または https:// で始まるものを入力してください',
+  )
+})
+
+test('rejects a location over the limit', () => {
+  expect(
+    validateEventForm(form({ location: 'あ'.repeat(LIMITS.eventLocationMaxLength + 1) }), [], now),
+  ).toContain(`場所は${LIMITS.eventLocationMaxLength}文字までです`)
+})
+
+test('offers times every 10 minutes, keeping a saved time off the step', () => {
+  expect(TIME_OPTIONS).toHaveLength(144)
+  expect(TIME_OPTIONS.slice(0, 3)).toEqual(['00:00', '00:10', '00:20'])
+  expect(TIME_OPTIONS.at(-1)).toBe('23:50')
+  expect(timeOptions('10:30')).toBe(TIME_OPTIONS)
+  const kept = timeOptions('10:05')
+  expect(kept.slice(kept.indexOf('10:00'), kept.indexOf('10:00') + 3)).toEqual([
+    '10:00',
+    '10:05',
+    '10:10',
+  ])
 })
 
 test('rejects an end before the start, too many days and dates out of range', () => {

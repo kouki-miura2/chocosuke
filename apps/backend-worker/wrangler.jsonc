@@ -15,9 +15,10 @@
   "d1_databases": [
     {
       "binding": "DB",
+      // No `database_id`: wrangler finds the database by name (`wrangler d1 create chocosuke`), so
+      // the public repository holds no account-specific id. `wrangler d1 create` offers to add a
+      // binding with the id here — don't keep it.
       "database_name": "chocosuke",
-      // Placeholder until `wrangler d1 create chocosuke`; local dev and tests don't need a real id.
-      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations",
     },
   ],

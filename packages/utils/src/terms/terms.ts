@@ -4,4 +4,4 @@
  * users whose agreed version is older (compared as strings, which orders ISO dates) are asked to
  * agree again before using the app. Shared so the consent screen and the API judge it the same way.
  */
-export const TERMS_VERSION = '2026-10-04'
+export const TERMS_VERSION = '2026-10-05'

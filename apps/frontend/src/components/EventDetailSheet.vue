@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { isHttpUrl } from 'utils'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -7,6 +8,7 @@ import { useEventMutations } from '../composables/useEventMutations.ts'
 import { scheduleColor } from '../lib/colors.ts'
 import { notifyLabel } from '../lib/event-form.ts'
 import { formatDateTime, formatEventTime } from '../lib/format.ts'
+import { mapEmbedUrl, mapLinkUrl } from '../lib/map.ts'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ImageViewer from './ImageViewer.vue'
 
@@ -78,6 +80,35 @@ const confirmDelete = async () => {
             event.notifyMinutes === null ? '通知なし' : `${notifyLabel(event.notifyMinutes)}に通知`
           }}
         </div>
+        <template v-if="event.location">
+          <a
+            :href="mapLinkUrl(event.location)"
+            target="_blank"
+            rel="noopener"
+            class="detail__row detail__location"
+          >
+            <v-icon icon="mdi-map-marker-outline" size="20" />
+            <span>{{ event.location }}</span>
+          </a>
+          <iframe
+            :src="mapEmbedUrl(event.location)"
+            :title="`${event.location} の地図`"
+            class="detail__map"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+          />
+        </template>
+        <!-- Checked again before it becomes a link: only http(s), never `javascript:`. -->
+        <a
+          v-if="event.url && isHttpUrl(event.url)"
+          :href="event.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="detail__row detail__link"
+        >
+          <v-icon icon="mdi-link-variant" size="20" />
+          <span>{{ event.url }}</span>
+        </a>
         <div v-if="event.memo" class="detail__row detail__memo">
           <v-icon icon="mdi-text" size="20" />
           <span>{{ event.memo }}</span>
@@ -158,6 +189,27 @@ const confirmDelete = async () => {
   gap: 12px;
   margin: 10px 0;
   color: #1b1c1e;
+}
+
+.detail__location,
+.detail__link {
+  color: rgb(var(--v-theme-primary));
+  text-decoration: none;
+}
+
+.detail__location span,
+.detail__link span {
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.detail__map {
+  display: block;
+  width: 100%;
+  height: 200px;
+  margin: 4px 0 12px;
+  border: 0;
+  border-radius: 8px;
 }
 
 .detail__memo span {

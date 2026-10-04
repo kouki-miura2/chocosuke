@@ -4,6 +4,7 @@ import { createApp } from 'vue'
 
 import { errorMessage } from './api/call.ts'
 import App from './App.vue'
+import { listenForInstallPrompt } from './composables/usePwaInstall.ts'
 import { seedFromLocalDb } from './composables/useSyncQuery.ts'
 import { vuetify } from './plugins/vuetify.ts'
 import { isAuthError, onApiError, queryClient } from './query-client.ts'
@@ -32,6 +33,9 @@ onApiError((error, kind) => {
   if (kind === 'query' && error instanceof Error && error.message === 'NETWORK') return
   useNotificationStore(pinia).show(errorMessage(error))
 })
+
+// The install prompt can come before any screen asks for it ('設定 > アプリをインストール').
+listenForInstallPrompt()
 
 // The local DB first (view state, then the last synced data shown before the first sync returns).
 void Promise.all([useViewStateStore(pinia).load(), seedFromLocalDb()])

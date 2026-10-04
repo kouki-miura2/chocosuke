@@ -27,3 +27,11 @@ test('loads the saved state and saves changes', async () => {
   store.toggleSchedule('s1')
   expect(store.hiddenScheduleIds).toEqual([])
 })
+
+test('shows one schedule alone', () => {
+  const store = useViewStateStore()
+  store.toggleSchedule('s2')
+
+  store.showOnlySchedule('s2', ['s1', 's2', 's3'])
+  expect(store.hiddenScheduleIds).toEqual(['s1', 's3'])
+})

@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth.ts'
 import { googleClientId, useGoogleButton } from '../composables/useGoogleButton.ts'
 import { redirectTarget } from '../lib/redirect.ts'
+import { isAuthError } from '../query-client.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 
 const route = useRoute()
@@ -14,7 +15,14 @@ const notification = useNotificationStore()
 const appTitle = import.meta.env.VITE_APP_TITLE
 
 const onCredential = async (credential: string) => {
-  const next = await signIn.mutateAsync(credential)
+  let next: Awaited<ReturnType<typeof signIn.mutateAsync>>
+  try {
+    next = await signIn.mutateAsync(credential)
+  } catch (error) {
+    // main.ts shows other errors, but leaves auth errors alone on public screens like this one.
+    if (isAuthError(error)) notification.show('ログインできませんでした。もう一度お試しください')
+    return
+  }
   const redirect = redirectTarget(route.query)
   await router.replace(next === 'consent' ? { name: 'consent', query: { redirect } } : redirect)
 }
@@ -33,14 +41,14 @@ const devName = ref('alice')
 </script>
 
 <template>
-  <v-container class="login fill-height">
-    <div class="login__body">
-      <div class="login__logo">
-        <v-icon icon="mdi-calendar-month" size="48" color="white" />
-      </div>
-      <h1 class="text-h5 font-weight-bold">{{ appTitle }}</h1>
+  <v-container class="login">
+    <div class="login__hero">
+      <img src="/icons/icon.svg" alt="" width="88" height="88" />
+      <h1 class="login__title">{{ appTitle }}</h1>
       <p class="login__catch">自分の予定も、家族の予定も、<br />ひとつのカレンダーで。</p>
+    </div>
 
+    <div class="login__actions">
       <div v-if="googleClientId" ref="buttonContainer" class="login__google" />
       <template v-else-if="devLogin">
         <v-text-field
@@ -83,34 +91,49 @@ const devName = ref('alice')
 </template>
 
 <style scoped>
+/* Logo and catchphrase centered in the space above; sign-in pinned to the bottom. */
 .login {
-  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  max-width: 440px;
+  min-height: 100dvh;
+  padding: 24px 24px max(32px, env(safe-area-inset-bottom));
 }
 
-.login__body {
+.login__hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.login__title {
+  margin: 8px 0 0;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+}
+
+.login__actions {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  width: 100%;
-  max-width: 400px;
   text-align: center;
 }
 
-.login__logo {
-  display: grid;
-  place-items: center;
-  width: 88px;
-  height: 88px;
-  border-radius: 24px;
-  background: rgb(var(--v-theme-primary));
-}
-
 .login__catch {
+  margin: 0;
+  font-size: 14px;
   color: #44474e;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
+/* The Google button is rendered at this element's width. */
 .login__google {
   width: 100%;
   max-width: 400px;
@@ -123,5 +146,9 @@ const devName = ref('alice')
   font-size: 12px;
   color: #5b5f68;
   line-height: 1.6;
+}
+
+.login__note a {
+  color: rgb(var(--v-theme-primary));
 }
 </style>

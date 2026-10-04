@@ -1,6 +1,7 @@
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 import './fonts.css'
+import './vuetify.css'
 import { createVuetify } from 'vuetify'
 import { ja } from 'vuetify/locale'
 
@@ -34,5 +35,15 @@ export const vuetify = createVuetify({
     VCombobox: { variant: 'outlined' },
     VDateInput: { variant: 'outlined', prependIcon: '', prependInnerIcon: '$calendar' },
     VBtn: { rounded: 'pill' },
+    // A segmented button: one outlined, rounded group (its buttons square inside it, not pills),
+    // the selected one filled through the theme's `bg-*` class rather than an active overlay.
+    VBtnToggle: {
+      border: 'sm opacity-50',
+      divided: true,
+      rounded: 'lg',
+      variant: 'text',
+      selectedClass: 'bg-primary-container',
+      VBtn: { rounded: 0 },
+    },
   },
 })

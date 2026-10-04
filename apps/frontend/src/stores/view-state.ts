@@ -45,5 +45,10 @@ export const useViewStateStore = defineStore('viewState', () => {
       : [...state.hiddenScheduleIds, scheduleId]
   }
 
-  return { ...toRefs(state), load, reset, toggleSchedule }
+  /** Shows `scheduleId` alone, hiding the rest of `allIds` (a long press on a filter chip). */
+  const showOnlySchedule = (scheduleId: string, allIds: string[]) => {
+    state.hiddenScheduleIds = allIds.filter((id) => id !== scheduleId)
+  }
+
+  return { ...toRefs(state), load, reset, toggleSchedule, showOnlySchedule }
 })

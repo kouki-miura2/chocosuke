@@ -40,6 +40,10 @@ export const LIMITS = {
   eventTitleMaxLength: 50,
   /** Max length (characters) of an event memo. Checked in both the UI and the API. Provisional. */
   eventMemoMaxLength: 1000,
+  /** Max length (characters) of an event location (place name, address or coordinates). Checked in both the UI and the API. Provisional. */
+  eventLocationMaxLength: 200,
+  /** Max length (characters) of an event URL. Checked in both the UI and the API. Provisional. */
+  eventUrlMaxLength: 2000,
   /**
    * Max days an event spans, start and end date inclusive. Checked in both the UI and the API.
    * Also bounds the `start_date` lower limit of the per-day count query.

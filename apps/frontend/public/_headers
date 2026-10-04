@@ -3,9 +3,9 @@
 # The API is same-origin (`/api`), so `default-src 'self'` already allows it. Add each external
 # origin the app needs (sign-in, third-party APIs, images) to the matching CSP directive
 # (e.g. `connect-src 'self' https://...`). Google sign-in (Google Identity Services) needs its
-# script, iframe, fetch and stylesheet origins below.
+# script, iframe, fetch and stylesheet origins below; the event detail embeds a Google Maps iframe.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/; connect-src 'self' https://accounts.google.com/gsi/; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' blob: data:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; frame-src https://accounts.google.com/gsi/ https://www.google.com/maps; connect-src 'self' https://accounts.google.com/gsi/; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' blob: data:; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

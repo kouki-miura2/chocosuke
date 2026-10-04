@@ -26,6 +26,8 @@ test('sorts rows by date, time and schedule order', () => {
     endDate: '2026-10-05',
     endTime: null,
     notify: 'なし',
+    location: null,
+    url: null,
     memo: null,
     updatedBy: '',
     updatedAt: '',

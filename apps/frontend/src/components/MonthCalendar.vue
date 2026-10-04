@@ -42,7 +42,7 @@ const segmentsByDate = computed(() => {
 
 // How many bars fit: measured from the rendered cell height.
 const BAR_HEIGHT = 17
-const LABEL_HEIGHT = 40
+const LABEL_HEIGHT = 42
 const root = ref<HTMLElement | null>(null)
 const cellHeight = ref(80)
 let observer: ResizeObserver | undefined
@@ -159,7 +159,9 @@ const weekdayLabel = (weekday: number) => ['日', '月', '火', '水', '木', '�
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 36px;
+  /* The top padding keeps the selected day's outline inside the clipped label. */
+  height: 39px;
+  padding-top: 3px;
   overflow: hidden;
 }
 
@@ -194,7 +196,7 @@ const weekdayLabel = (weekday: number) => ['日', '月', '火', '水', '木', '�
 
 .month__events {
   position: absolute;
-  inset: 40px 0 0;
+  inset: 42px 0 0;
 }
 
 .month__bar {

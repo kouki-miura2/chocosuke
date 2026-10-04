@@ -1,9 +1,10 @@
 import { zValidator } from '@hono/zod-validator'
 import { type Context, Hono } from 'hono'
+import { bodyLimit } from 'hono/body-limit'
 import { deleteCookie, setCookie } from 'hono/cookie'
 import { csrf } from 'hono/csrf'
 import { HTTPException } from 'hono/http-exception'
-import { TERMS_VERSION, createLogger } from 'utils'
+import { LIMITS, TERMS_VERSION, createLogger } from 'utils'
 import type { z } from 'zod'
 
 import type { GoogleVerifier } from './auth/google.ts'
@@ -59,6 +60,12 @@ export interface AppDependencies {
   session: SessionCodec
   auth: AuthConfig
 }
+
+/** Largest JSON request body: far above any valid one (a memo is at most 1000 characters). */
+const MAX_JSON_BYTES = 64 * 1024
+
+const isImageUpload = (c: Context) =>
+  c.req.method === 'POST' && /^\/api\/events\/[^/]+\/images$/.test(c.req.path)
 
 /** Paths reachable without a session. */
 export const PUBLIC_PATHS = ['/api/auth/google', '/api/auth/register']
@@ -137,6 +144,17 @@ export const createApp = (deps: AppDependencies) => {
           })
         }
       })
+      // Request bodies are capped before they are read: an image upload at `imageMaxBytes`, anything
+      // else (JSON) at `MAX_JSON_BYTES`.
+      .use('*', (c, next) =>
+        bodyLimit({
+          maxSize: isImageUpload(c) ? LIMITS.imageMaxBytes : MAX_JSON_BYTES,
+          onError: (c) =>
+            isImageUpload(c)
+              ? c.json({ error: 'LIMIT_EXCEEDED', limit: 'imageMaxBytes' }, 413)
+              : c.json({ error: 'VALIDATION' }, 413),
+        })(c, next),
+      )
       // Rejects cross-site form posts (the session cookie is SameSite=Lax as well).
       .use('*', csrf())
       .use('*', async (c, next) => {

@@ -66,6 +66,8 @@ export interface EventRecord {
   notify_minutes: number | null
   notify_at: number | null
   memo: string | null
+  location: string | null
+  url: string | null
   updated_by: string
   created_at: number
   updated_at: number

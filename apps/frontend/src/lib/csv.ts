@@ -12,6 +12,8 @@ export const CSV_HEADER = [
   '終了時刻',
   '終日',
   '通知',
+  '場所',
+  'URL',
   'メモ',
   '最終更新者',
   '最終更新日時',
@@ -41,6 +43,8 @@ export interface CsvEvent {
   endDate: string
   endTime: string | null
   notify: string
+  location: string | null
+  url: string | null
   memo: string | null
   updatedBy: string
   updatedAt: string
@@ -66,6 +70,8 @@ export const csvRows = (events: CsvEvent[]): string[][] =>
       e.endTime ?? '',
       e.startTime === null ? '終日' : '',
       e.notify,
+      e.location ?? '',
+      e.url ?? '',
       e.memo ?? '',
       e.updatedBy,
       e.updatedAt,

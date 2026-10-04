@@ -1,0 +1,5 @@
+/* Segmented buttons (VBtnToggle defaults in vuetify.ts): the selected one shows its theme color as
+   is, without the active overlay darkening it. */
+.v-btn-toggle > .v-btn--active > .v-btn__overlay {
+  opacity: 0;
+}

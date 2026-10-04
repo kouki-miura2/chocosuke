@@ -55,14 +55,7 @@ const error = computed(() => {
   <v-dialog v-model="open" max-width="440">
     <v-card :title="schedule ? '予定を編集' : '予定を追加'">
       <v-card-text class="d-flex flex-column ga-4">
-        <v-btn-toggle
-          v-if="!schedule"
-          v-model="scope"
-          mandatory
-          divided
-          variant="outlined"
-          color="primary"
-        >
+        <v-btn-toggle v-if="!schedule" v-model="scope" mandatory class="scope">
           <v-btn value="personal" prepend-icon="mdi-lock" text="個人" />
           <v-btn
             value="group"
@@ -113,6 +106,15 @@ const error = computed(() => {
 </template>
 
 <style scoped>
+.scope {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.scope :deep(.v-btn) {
+  flex: 1;
+}
+
 .colors {
   display: grid;
   grid-template-columns: repeat(6, 1fr);

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -6,9 +6,12 @@ import { getPlatformProxy } from 'wrangler'
 
 const packageDir = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
-const migrations = ['0001_init.sql'].map((name) =>
-  readFileSync(join(packageDir, 'migrations', name), 'utf8'),
-)
+// Every migration, in order, as `wrangler d1 migrations apply` would.
+const migrationsDir = join(packageDir, 'migrations')
+const migrations = readdirSync(migrationsDir)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .map((name) => readFileSync(join(migrationsDir, name), 'utf8'))
 
 const tables = [
   'event_images',

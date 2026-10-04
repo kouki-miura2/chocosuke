@@ -1,4 +1,4 @@
-import { TERMS_VERSION } from 'utils'
+import { LIMITS, TERMS_VERSION } from 'utils'
 import { expect, test, vi } from 'vite-plus/test'
 
 import { type AppDependencies, PUBLIC_PATHS, createApp } from './app.ts'
@@ -6,6 +6,7 @@ import { createSessionCodec } from './auth/session.ts'
 import { AppError } from './errors.ts'
 import type { AuthGuard } from './repository/auth-guard.interface.ts'
 import { createSessionAuthGuard } from './repository/auth-guard.session.ts'
+import type { EventService } from './service/event.service.ts'
 
 const session = createSessionCodec('test-secret')
 
@@ -153,6 +154,34 @@ test('rejects invalid bodies before the service, trimming and counting visible c
   })
 })
 
+test('takes only http(s) event URLs, and no URL from an older app', async () => {
+  const createEvent = vi.fn<EventService['createEvent']>(async () => ({ id: 'e1' }))
+  const app = createTestApp({ eventService: stubs({ createEvent }) })
+  const cookie = await cookieFor()
+  const event = {
+    scheduleId: 's1',
+    topicName: null,
+    title: '夏祭り',
+    allDay: true,
+    startDate: '2026-10-05',
+    startTime: null,
+    endDate: '2026-10-05',
+    endTime: null,
+    notifyMinutes: null,
+    memo: null,
+  }
+  const post = (fields: object) => app.request('/api/events', json({ ...event, ...fields }, cookie))
+
+  expect((await post({ url: 'javascript:alert(1)' })).status).toBe(400)
+  expect((await post({ url: 'example.com' })).status).toBe(400)
+  expect((await post({ url: ' https://example.com/matsuri ' })).status).toBe(201)
+  expect((await post({})).status).toBe(201)
+  expect(createEvent.mock.calls.map(([, input]) => input.url)).toEqual([
+    'https://example.com/matsuri',
+    null,
+  ])
+})
+
 test('hides unexpected errors behind a 500', async () => {
   vi.spyOn(console, 'error').mockImplementation(() => {})
   const app = createTestApp({
@@ -191,6 +220,28 @@ test('clearing the device unsubscribes, ends the session and clears the HTTP cac
   expect(unsubscribe).toHaveBeenCalledWith('u1', endpoint)
   expect(res.headers.get('clear-site-data')).toBe('"cache"')
   expect(res.headers.get('set-cookie')).toMatch(/^session=;/)
+})
+
+test('caps request bodies before reading them: images at imageMaxBytes, JSON far lower', async () => {
+  const addImage = vi.fn()
+  const app = createTestApp({ imageService: stubs({ addImage }) })
+  const cookie = await cookieFor()
+
+  const image = await app.request('/api/events/e1/images?width=10&height=10', {
+    method: 'POST',
+    headers: { 'content-type': 'image/jpeg', cookie },
+    body: new Uint8Array(LIMITS.imageMaxBytes + 1),
+  })
+  const jsonBody = await app.request('/api/schedules', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ name: 'x'.repeat(100 * 1024) }),
+  })
+
+  expect(image.status).toBe(413)
+  expect(await image.json()).toEqual({ error: 'LIMIT_EXCEEDED', limit: 'imageMaxBytes' })
+  expect(jsonBody.status).toBe(413)
+  expect(addImage).not.toHaveBeenCalled()
 })
 
 test('rejects cross-site form posts', async () => {

@@ -9,11 +9,11 @@ import ImageField from '../components/ImageField.vue'
 import { useAppData } from '../composables/useAppData.ts'
 import { type NewImage, useEventMutations } from '../composables/useEventMutations.ts'
 import {
-  TIME_OPTIONS,
   emptyEventForm,
   formOfEvent,
   notifyOptions,
   shiftEndDate,
+  timeOptions,
   toEventInput,
   validateEventForm,
 } from '../lib/event-form.ts'
@@ -119,10 +119,13 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
 </script>
 
 <template>
+  <!-- The route is the dialog: back (× or the device's) leaves the route, which closes it.
+       `closeOnBack` would cancel that navigation instead, as the dialog is persistent. -->
   <v-dialog
     :model-value="true"
     fullscreen
     persistent
+    :close-on-back="false"
     :scrim="false"
     transition="dialog-bottom-transition"
   >
@@ -179,7 +182,7 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           <v-select
             v-if="!form.allDay"
             v-model="form.startTime"
-            :items="TIME_OPTIONS"
+            :items="timeOptions(form.startTime)"
             label="開始時刻"
             class="edit__time"
             hide-details
@@ -190,7 +193,7 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           <v-select
             v-if="!form.allDay"
             v-model="form.endTime"
-            :items="TIME_OPTIONS"
+            :items="timeOptions(form.endTime)"
             label="終了時刻"
             class="edit__time"
             hide-details
@@ -202,6 +205,27 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           label="通知"
           prepend-inner-icon="mdi-bell-outline"
           hide-details
+        />
+        <v-text-field
+          :model-value="form.location"
+          label="場所（任意）"
+          prepend-inner-icon="mdi-map-marker-outline"
+          hint="施設名・住所・緯度経度（例: 43.0687,141.3508）。詳細画面に地図を表示します"
+          persistent-hint
+          clearable
+          @update:model-value="(value: string | null) => (form.location = value ?? '')"
+        />
+        <v-text-field
+          :model-value="form.url"
+          label="URL（任意）"
+          type="url"
+          inputmode="url"
+          prepend-inner-icon="mdi-link-variant"
+          placeholder="https://"
+          hint="お祭りや勉強会のページなど。詳細画面から開けます"
+          persistent-hint
+          clearable
+          @update:model-value="(value: string | null) => (form.url = value ?? '')"
         />
         <v-textarea
           v-model="form.memo"

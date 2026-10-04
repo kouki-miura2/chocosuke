@@ -3,6 +3,7 @@ import {
   addDaysToDate,
   daysBetween,
   isNotifyMinutes,
+  isOnTimeStep,
   notifyAt,
   selectableDateRange,
 } from 'utils'
@@ -35,6 +36,10 @@ export interface EventInput {
   endTime: string | null
   notifyMinutes: number | null
   memo: string | null
+  /** Place name, address or coordinates, shown on a map; `null` for none. */
+  location: string | null
+  /** A web page about the event (http/https); `null` for none. */
+  url: string | null
 }
 
 export interface EventService {
@@ -49,9 +54,15 @@ export interface EventService {
   deleteEvent: (userId: string, id: string) => Promise<void>
 }
 
-const minutesOf = (time: string): number => Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
-
-const validateFields = (input: EventInput, now: number): void => {
+/**
+ * Checks the fields on their own. `keptTimes` are the event's current times: one already saved off
+ * the time step (from before it was 10 minutes) can stay as it is, only a changed one must be on it.
+ */
+const validateFields = (
+  input: EventInput,
+  now: number,
+  keptTimes: (string | null)[] = [],
+): void => {
   const invalid = (message: string) => new AppError('VALIDATION', { message })
 
   if (input.allDay) {
@@ -59,9 +70,8 @@ const validateFields = (input: EventInput, now: number): void => {
     if (input.endDate < input.startDate) throw invalid('end before start')
   } else {
     if (input.startTime === null || input.endTime === null) throw invalid('time required')
-    if (minutesOf(input.startTime) % 5 !== 0 || minutesOf(input.endTime) % 5 !== 0) {
-      throw invalid('time not in 5-minute steps')
-    }
+    const onStep = (time: string) => isOnTimeStep(time) || keptTimes.includes(time)
+    if (!onStep(input.startTime) || !onStep(input.endTime)) throw invalid('time off the time step')
     if (`${input.endDate} ${input.endTime}` <= `${input.startDate} ${input.startTime}`) {
       throw invalid('end not after start')
     }
@@ -157,6 +167,8 @@ export const createEventService = (
       // A notification time already past at save is never sent.
       notifyAt: at !== null && at > now ? at : null,
       memo: input.memo,
+      location: input.location,
+      url: input.url,
       updatedBy: user.id,
       updatedAt: now,
     }
@@ -190,8 +202,8 @@ export const createEventService = (
     updateEvent: async (userId, id, input) => {
       const user = await requireUser(store, userId)
       const now = runtime.now()
-      validateFields(input, now)
       const event = await findAccessibleEvent(user, id)
+      validateFields(input, now, [event.startTime, event.endTime])
       const schedule = await findAccessibleSchedule(user, input.scheduleId)
       await assertDayCount(input, id)
       const topic = await resolveTopic(schedule, input.topicName, now)

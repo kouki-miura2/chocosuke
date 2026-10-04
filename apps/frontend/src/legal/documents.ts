@@ -108,6 +108,7 @@ export const documents: Record<'terms' | 'privacy', LegalDocument> = {
         heading: '4. 保存場所・委託',
         paragraphs: [
           '情報はCloudflare, Inc.のサービス（Cloudflare Workers・D1・R2）に保存されます。プッシュ通知は各ブラウザの通知サービス（Google・Apple・Mozilla・Microsoft）を通じて送信されます。',
+          'イベントに場所を登録した場合、イベントの詳細を開くと地図を表示するため、その場所の文字列がGoogle LLCのサービス（Googleマップ）に送信されます。',
         ],
       },
       {

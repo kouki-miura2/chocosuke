@@ -42,6 +42,9 @@ export const createGoogleVerifier = (
 
   return {
     verify: async (idToken) => {
+      // Without a client id the audience check would be skipped, accepting tokens issued to any
+      // other app: refuse every token instead.
+      if (!clientId) return null
       const cached = cache && cache.expiresAt > now() ? cache.keys : null
       try {
         return await verifyWith(idToken, cached ?? (await loadKeys()))

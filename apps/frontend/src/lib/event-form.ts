@@ -1,9 +1,11 @@
 import {
+  EVENT_TIME_STEP_MINUTES,
   LIMITS,
   NOTIFY_MINUTES,
   addDaysToDate,
   charLength,
   daysBetween,
+  isHttpUrl,
   isNotifyMinutes,
   selectableDateRange,
 } from 'utils'
@@ -25,6 +27,8 @@ export interface EventForm {
   endTime: string | null
   notifyMinutes: number | null
   memo: string
+  location: string
+  url: string
 }
 
 export const emptyEventForm = (date: string): EventForm => ({
@@ -38,6 +42,8 @@ export const emptyEventForm = (date: string): EventForm => ({
   endTime: '11:00',
   notifyMinutes: null,
   memo: '',
+  location: '',
+  url: '',
 })
 
 export const formOfEvent = (event: CalendarEvent, topicName: string): EventForm => ({
@@ -51,6 +57,8 @@ export const formOfEvent = (event: CalendarEvent, topicName: string): EventForm 
   endTime: event.endTime,
   notifyMinutes: event.notifyMinutes,
   memo: event.memo ?? '',
+  location: event.location ?? '',
+  url: event.url ?? '',
 })
 
 const notifyLabels: Record<number, string> = {
@@ -76,11 +84,18 @@ export const notifyOptions = (allDay: boolean): { value: number | null; title: s
 export const notifyLabel = (minutes: number | null): string =>
   minutes === null ? 'なし' : (notifyLabels[minutes] ?? '')
 
-/** Every 5 minutes of a day: `00:00` … `23:55`. */
-export const TIME_OPTIONS = Array.from({ length: 24 * 12 }, (_, i) => {
-  const minutes = i * 5
+/** Every 10 minutes of a day: `00:00` … `23:50`. */
+export const TIME_OPTIONS = Array.from({ length: (24 * 60) / EVENT_TIME_STEP_MINUTES }, (_, i) => {
+  const minutes = i * EVENT_TIME_STEP_MINUTES
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 })
+
+/**
+ * The time choices for a field showing `time`: an event saved off the step (from before it was 10
+ * minutes) keeps its time among them, so it can be saved again unchanged.
+ */
+export const timeOptions = (time: string | null): string[] =>
+  time && !TIME_OPTIONS.includes(time) ? [...TIME_OPTIONS, time].sort() : TIME_OPTIONS
 
 /** The form as the API takes it (`POST/PATCH /api/events`). */
 export const toEventInput = (form: EventForm): EventInput => ({
@@ -94,6 +109,8 @@ export const toEventInput = (form: EventForm): EventInput => ({
   endTime: form.allDay ? null : form.endTime,
   notifyMinutes: form.notifyMinutes,
   memo: form.memo.trim() || null,
+  location: form.location.trim() || null,
+  url: form.url.trim() || null,
 })
 
 /**
@@ -118,6 +135,15 @@ export const validateEventForm = (
   }
   if (charLength(form.memo.trim()) > LIMITS.eventMemoMaxLength) {
     errors.push(`メモは${LIMITS.eventMemoMaxLength}文字までです`)
+  }
+  if (charLength(form.location.trim()) > LIMITS.eventLocationMaxLength) {
+    errors.push(`場所は${LIMITS.eventLocationMaxLength}文字までです`)
+  }
+  const url = form.url.trim()
+  if (charLength(url) > LIMITS.eventUrlMaxLength) {
+    errors.push(`URLは${LIMITS.eventUrlMaxLength}文字までです`)
+  } else if (url && !isHttpUrl(url)) {
+    errors.push('URLは http:// または https:// で始まるものを入力してください')
   }
 
   const { min, max } = selectableDateRange(now)

@@ -1,4 +1,4 @@
-import { LIMITS, charLength, isDateString, isTimeString } from 'utils'
+import { LIMITS, charLength, isDateString, isHttpUrl, isTimeString } from 'utils'
 import { z } from 'zod'
 
 // Request shapes. Strings are trimmed (docs/spec.md "共通ルール > 入力") and length-checked with
@@ -56,6 +56,14 @@ export const eventSchema = z.object({
   endTime: time.nullable(),
   notifyMinutes: z.number().int().nullable(),
   memo: optionalText(LIMITS.eventMemoMaxLength),
+  // Optional: an app installed before these fields existed sends none.
+  location: optionalText(LIMITS.eventLocationMaxLength)
+    .optional()
+    .transform((value) => value ?? null),
+  url: optionalText(LIMITS.eventUrlMaxLength)
+    .refine((value) => value === null || isHttpUrl(value))
+    .optional()
+    .transform((value) => value ?? null),
 })
 
 export const imageQuerySchema = z.object({
