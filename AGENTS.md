@@ -19,6 +19,55 @@ Monorepo managed with pnpm workspaces (`apps/*`, `packages/*`). Project-specific
 - API request/response types are not hand-shared: `apps/frontend` gets them from `apps/backend` via Hono RPC, not from a separate types package.
 - Runtime-agnostic shared code goes in `packages/utils`, not duplicated per app.
 
+### Public config values for the frontend
+
+Values that aren't secret but differ per environment (e.g. a Google OAuth web client ID, a VAPID public key) reach the frontend as build-time env vars (`import.meta.env.VITE_*`). Don't add an API that returns config values (e.g. `GET /api/config`).
+
+- Put the values in `apps/frontend/.env.local` (gitignored). `apps/frontend/.env` is committed and public, so it lists only the variable names and a description as comments, never the values:
+  ```
+  # VITE_GOOGLE_WEB_CLIENT_ID=<web OAuth client id>
+  # VITE_VAPID_PUBLIC_KEY=<VAPID public key>   # only if Web Push is used
+  ```
+- Values the backend verifies against (the client ID accepted as the ID token's `aud`, the VAPID private key) are registered with `wrangler secret put` (locally: `apps/backend-worker/.dev.vars`), not written in `wrangler.jsonc` `vars`, so the public repository holds no environment-specific values.
+- The app must still run when a value is unset (e.g. without a client ID, show the Google button disabled, and use a development login locally).
+- Why: one fewer API, one fewer request at startup, one fewer loading state. The values only change on deploy, so baking them into the build costs nothing.
+- Note: the client ID is set in two places, the frontend (`.env.local`) and the backend (secret). The deploy steps must list both.
+
+### Sign in with Google and terms consent
+
+The official Google sign-in button (Google Identity Services) can't be disabled, so don't design the login screen to keep the button disabled until a consent checkbox is ticked. Use this order instead:
+
+1. The welcome screen shows the official Google button, which can be pressed before consenting.
+2. The API verifies the ID token from the sign-in. A registered user goes straight to the home screen.
+3. An unregistered user gets the consent screen: links to the terms of service and privacy policy, and a consent checkbox. "同意してはじめる" stays disabled until it's ticked.
+4. After consent, call the registration API with the ID token and the version of the terms agreed to. The user is created only then.
+
+- Consent is recorded at registration, on the server, so there's no need to ask for it before the sign-in button is pressed. When the terms are revised, show the consent screen the next time the app is opened.
+- Links from the consent screen to the terms open in a new tab. Opening them in the same tab loses the signed-in state (the ID token).
+- Only when the client ID is unset, show a disabled `v-btn` that looks like the Google button in its place. The Google button is `size: large`, pill-shaped, 40px high and at most 400px wide.
+
+### Operator name and contact in the terms and privacy policy
+
+Don't write the operator's name and contact email directly into the terms of service and privacy policy. Embed them from env vars.
+
+- Put them in `apps/frontend/.env.local` (gitignored):
+  ```
+  VITE_OPERATOR_NAME=山田太郎
+  VITE_CONTACT_EMAIL=contact@example.com
+  ```
+- `apps/frontend/.env` holds only a description:
+  ```
+  # VITE_OPERATOR_NAME / VITE_CONTACT_EMAIL: 利用規約・プライバシーポリシー（src/legal/documents.ts）に表示する運営者名と
+  # 問い合わせ先。デプロイ前に .env.local で設定する。未設定のときは仮の表示になる。
+  ```
+- The document text (`src/legal/documents.ts`) falls back to placeholders when they're unset, and embeds them as `${OPERATOR}` / `${CONTACT}`:
+  ```ts
+  const OPERATOR: string = import.meta.env.VITE_OPERATOR_NAME ?? '（運営者名）'
+  const CONTACT: string = import.meta.env.VITE_CONTACT_EMAIL ?? '（お問い合わせ先）'
+  ```
+- Note: the values are baked into the build, so anyone can see them in the published app. This keeps them out of the repository; it doesn't keep them secret.
+- The terms and privacy policy text is written as a draft. The operator checks it for legal issues themselves. Whenever the text changes, set the terms version (`TERMS_VERSION`, read by both the frontend and the backend) to the revision date. The version is the date as a `YYYY-MM-DD` string, so string comparison orders it, and the database stores it as text.
+
 <!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web
