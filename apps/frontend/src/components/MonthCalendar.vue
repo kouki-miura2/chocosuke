@@ -27,9 +27,6 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ selectDay: [date: string] }>()
 
-const weekdays = computed(() =>
-  props.weekStart === 1 ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6],
-)
 const weeks = computed(() => monthWeeks(props.month, props.weekStart))
 
 const segmentsByDate = computed(() => {
@@ -71,11 +68,12 @@ const weekdayLabel = (weekday: number) => ['日', '月', '火', '水', '木', '�
 
 <template>
   <div ref="root" class="month">
+    <!-- Vuetify 4 orders the columns by `first-day-of-week`; `weekdays` only picks which to show. -->
     <v-calendar
       type="month"
       :model-value="month"
       :now="today"
-      :weekdays="weekdays"
+      :first-day-of-week="weekStart"
       :weekday-format="(day: { weekday: number }) => weekdayLabel(day.weekday)"
       @click:day="(_: unknown, day: { date: string }) => emit('selectDay', day.date)"
     >
