@@ -20,7 +20,6 @@ import type { EventService } from './service/event.service.ts'
 import type { GroupService } from './service/group.service.ts'
 import type { ImageService } from './service/image.service.ts'
 import type { PushService } from './service/push.service.ts'
-import type { SampleService } from './service/sample.service.ts'
 import type { ScheduleService } from './service/schedule.service.ts'
 import type { SyncService } from './service/sync.service.ts'
 import {
@@ -30,6 +29,7 @@ import {
   groupSchema,
   imageQuerySchema,
   loginSchema,
+  registerSchema,
   memberNameSchema,
   scheduleOrderSchema,
   scheduleSchema,
@@ -55,14 +55,13 @@ export interface AppDependencies {
   syncService: SyncService
   pushService: PushService
   /** Template reference, still used by the template frontend; delete with it. */
-  sampleService: SampleService
   google: GoogleVerifier
   session: SessionCodec
   auth: AuthConfig
 }
 
 /** Paths reachable without a session. */
-export const PUBLIC_PATHS = ['/api/auth/google']
+export const PUBLIC_PATHS = ['/api/auth/google', '/api/auth/register']
 
 /**
  * Paths usable before agreeing to the current terms: what the consent screen itself needs, plus
@@ -169,12 +168,22 @@ export const createApp = (deps: AppDependencies) => {
       })
 
       // Auth and account (docs/spec.md "ログイン・同意", "設定")
+      // Sign in first, consent and register after (root AGENTS.md "Sign in with Google and terms
+      // consent"): an unregistered account gets no session until it registers.
       .post('/auth/google', valid('json', loginSchema), async (c) => {
         const googleSub = await deps.google.verify(c.req.valid('json').credential)
         if (!googleSub) throw new AppError('UNAUTHORIZED')
         const session = await deps.accountService.login(googleSub)
+        if (!session) return c.json({ registered: false, needsConsent: true })
         await startSession(c, session)
-        return c.json({ needsConsent: session.termsVersion < TERMS_VERSION })
+        return c.json({ registered: true, needsConsent: session.termsVersion < TERMS_VERSION })
+      })
+      .post('/auth/register', valid('json', registerSchema), async (c) => {
+        const { credential, termsVersion } = c.req.valid('json')
+        const googleSub = await deps.google.verify(credential)
+        if (!googleSub) throw new AppError('UNAUTHORIZED')
+        await startSession(c, await deps.accountService.register(googleSub, termsVersion))
+        return c.json({ ok: true })
       })
       .post('/auth/consent', async (c) => {
         await startSession(c, await deps.accountService.agreeToTerms(userIdOf(c)))
@@ -321,15 +330,6 @@ export const createApp = (deps: AppDependencies) => {
         // Image responses are in the browser's HTTP cache, which page scripts can't clear.
         c.header('Clear-Site-Data', '"cache"')
         return c.json({ ok: true })
-      })
-
-      // Template reference of the route -> service -> repository -> dao chain, still used by the
-      // template frontend. Delete this route and `{service,repository,dao}/sample.*` together with
-      // the frontend's sample screens.
-      .get('/sample/:id', async (c) => {
-        const sample = await deps.sampleService.getSample(c.req.param('id'))
-        if (!sample) return c.json({ error: 'Not Found' }, 404)
-        return c.json(sample)
       })
   )
 }

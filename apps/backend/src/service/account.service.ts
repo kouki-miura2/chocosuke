@@ -1,5 +1,6 @@
 import { TERMS_VERSION } from 'utils'
 
+import { AppError } from '../errors.ts'
 import {
   type StoreRepository,
   insert,
@@ -22,8 +23,13 @@ export interface MeView {
 }
 
 export interface AccountService {
-  /** Finds or creates the user for a verified Google account. */
-  login: (googleSub: string) => Promise<Session>
+  /** The session of a verified Google account's user, or `null` if it isn't registered yet. */
+  login: (googleSub: string) => Promise<Session | null>
+  /**
+   * Registers the user of a verified Google account who agreed to `termsVersion` (it must be the
+   * current one). Registering an already registered account just signs it in.
+   */
+  register: (googleSub: string, termsVersion: string) => Promise<Session>
   agreeToTerms: (userId: string) => Promise<Session>
   getMe: (userId: string) => Promise<MeView>
   /** Withdraws: deletes the personal data, leaves the group, marks the user deleted. */
@@ -35,19 +41,34 @@ export interface AccountService {
 export const createAccountService = (store: StoreRepository, runtime: Runtime): AccountService => ({
   login: async (googleSub) => {
     const existing = await store.findUserByGoogleSub(googleSub)
+    return existing && { userId: existing.id, termsVersion: existing.agreedTermsVersion }
+  },
+
+  register: async (googleSub, termsVersion) => {
+    if (termsVersion !== TERMS_VERSION) throw new AppError('VALIDATION')
+    const existing = await store.findUserByGoogleSub(googleSub)
     if (existing) return { userId: existing.id, termsVersion: existing.agreedTermsVersion }
 
     const id = runtime.newId()
     try {
-      await store.commit([], [insert('users', { id, googleSub, createdAt: runtime.now() })])
+      await store.commit(
+        [],
+        [
+          insert('users', {
+            id,
+            googleSub,
+            agreedTermsVersion: TERMS_VERSION,
+            createdAt: runtime.now(),
+          }),
+        ],
+      )
     } catch (error) {
-      // A concurrent first login for the same account won the unique index; use that user.
+      // A concurrent registration of the same account won the unique index; use that user.
       const winner = await store.findUserByGoogleSub(googleSub)
       if (!winner) throw error
       return { userId: winner.id, termsVersion: winner.agreedTermsVersion }
     }
-    // '' = not agreed to any version yet.
-    return { userId: id, termsVersion: '' }
+    return { userId: id, termsVersion: TERMS_VERSION }
   },
 
   agreeToTerms: async (userId) => {

@@ -25,7 +25,6 @@ const createTestApp = (overrides: Partial<AppDependencies> = {}) =>
     groupService: stubs(),
     syncService: stubs(),
     pushService: stubs(),
-    sampleService: stubs(),
     google: stubs(),
     session,
     auth: { guard: createSessionAuthGuard(session), enabled: true, excludePaths: PUBLIC_PATHS },
@@ -57,12 +56,41 @@ test('login verifies the Google credential and sets an HttpOnly session cookie',
   const res = await app.request('/api/auth/google', json({ credential: 'id-token' }))
 
   expect(res.status).toBe(200)
-  expect(await res.json()).toEqual({ needsConsent: true })
+  expect(await res.json()).toEqual({ registered: true, needsConsent: true })
   const cookie = res.headers.get('set-cookie') ?? ''
   expect(cookie).toMatch(/^session=[^;]+;/)
   expect(cookie).toContain('HttpOnly')
   expect(cookie).toContain('Secure')
   expect(cookie).toContain('SameSite=Lax')
+})
+
+test('login of an unregistered account starts no session', async () => {
+  const app = createTestApp({
+    google: { verify: vi.fn(async () => 'google-sub') },
+    accountService: stubs({ login: vi.fn(async () => null) }),
+  })
+
+  const res = await app.request('/api/auth/google', json({ credential: 'id-token' }))
+
+  expect(await res.json()).toEqual({ registered: false, needsConsent: true })
+  expect(res.headers.get('set-cookie')).toBeNull()
+})
+
+test('register verifies the credential again and starts a session', async () => {
+  const register = vi.fn(async () => ({ userId: 'u1', termsVersion: TERMS_VERSION }))
+  const app = createTestApp({
+    google: { verify: vi.fn(async () => 'google-sub') },
+    accountService: stubs({ register }),
+  })
+
+  const res = await app.request(
+    '/api/auth/register',
+    json({ credential: 'id-token', termsVersion: TERMS_VERSION }),
+  )
+
+  expect(res.status).toBe(200)
+  expect(register).toHaveBeenCalledWith('google-sub', TERMS_VERSION)
+  expect(res.headers.get('set-cookie')).toMatch(/^session=/)
 })
 
 test('login rejects an invalid Google credential', async () => {

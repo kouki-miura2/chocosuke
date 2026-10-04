@@ -27,6 +27,9 @@ const id = z.string().min(1).max(64)
 
 export const loginSchema = z.object({ credential: z.string().min(1) })
 
+/** `termsVersion`: the terms version the user agreed to on the consent screen. */
+export const registerSchema = loginSchema.extend({ termsVersion: z.string().max(10) })
+
 export const scheduleSchema = z.object({
   scope: z.enum(['personal', 'group']),
   name: text(LIMITS.scheduleNameMaxLength),

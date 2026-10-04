@@ -31,7 +31,7 @@ reference. Add a DAO method only for a read the existing ones can't express.
 ## Procedure
 
 Build bottom-up — each layer's test needs the layer below it to already have an interface.
-Replace `<name>` below with the resource name (e.g. `widget`), matching the `sample.*` naming
+Replace `<name>` below with the resource name (e.g. `widget`), matching the existing `schedule.*` naming
 scheme.
 
 ### 1. DAO layer (only when a new read is needed)
@@ -56,7 +56,7 @@ scheme.
   logic and orchestration. Express "not found" / "invalid" as `null` or a thrown error — never an
   HTTP status here.
 - `src/service/<name>.service.test.ts` — co-located test, using a hand-written fake
-  `<Name>Repository` (see `sample.service.test.ts`).
+  `<Name>Repository` (see `event.service.test.ts`).
 
 ### 4. Route layer (`src/app.ts`)
 
@@ -88,5 +88,3 @@ vp test    # or: vp run backend#test
 - Each layer's test fakes only the interface directly below it, not the real implementation, so
   layers stay independently testable. The DAO tests and `worker.test.ts` are the ones that touch
   the real (local D1/R2) implementation.
-- `sample.*` and `/sample/:id` are template leftovers; delete them with the frontend's sample
-  screens (see `apps/backend/AGENTS.md`).

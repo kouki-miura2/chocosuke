@@ -1,5 +1,5 @@
 import type { PushSender } from 'backend/src/push/web-push.ts'
-import { addDaysToDate, formatDate } from 'utils'
+import { TERMS_VERSION, addDaysToDate, formatDate } from 'utils'
 import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vite-plus/test'
 
 import { createTestEnv } from './dao/test-env.ts'
@@ -18,10 +18,6 @@ const app = () =>
       DB: env.db,
       IMAGES: env.bucket,
       SESSION_SECRET: 'test-secret',
-      VAPID_PRIVATE_KEY: '',
-      GOOGLE_CLIENT_ID: '',
-      VAPID_PUBLIC_KEY: '',
-      VAPID_SUBJECT: '',
     } as WorkerEnv,
     {
       runtime: { now: () => clock, newId: () => crypto.randomUUID() },
@@ -48,21 +44,16 @@ const sameOrigin = { 'sec-fetch-site': 'same-origin' }
 
 type Body = Record<string, any>
 
-/** Signs in (and agrees to the terms) as the Google account `sub`, returning an API caller. */
+/** Registers (agreeing to the terms) as the Google account `sub`, returning an API caller. */
 const signIn = async (sub: string) => {
   const { app: api } = app()
   const cookieOf = (res: Response) => (res.headers.get('set-cookie') ?? '').split(';')[0]
-  const login = await api.request('/api/auth/google', {
+  const register = await api.request('/api/auth/register', {
     method: 'POST',
     headers: { ...sameOrigin, 'content-type': 'application/json' },
-    body: JSON.stringify({ credential: sub }),
+    body: JSON.stringify({ credential: sub, termsVersion: TERMS_VERSION }),
   })
-  let cookie = cookieOf(login)
-  const consent = await api.request('/api/auth/consent', {
-    method: 'POST',
-    headers: { ...sameOrigin, cookie },
-  })
-  cookie = cookieOf(consent)
+  const cookie = cookieOf(register)
 
   const call = async (
     method: string,
@@ -139,6 +130,27 @@ const syncer = (client: Client) => {
     return body
   }
 }
+
+test('an account is created only when it registers after consenting', async () => {
+  const { app: api } = app()
+  const post = (path: string, body: unknown) =>
+    api.request(path, {
+      method: 'POST',
+      headers: { ...sameOrigin, 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+  const first = await post('/api/auth/google', { credential: 'carol' })
+  expect(await first.json()).toEqual({ registered: false, needsConsent: true })
+  expect(
+    (await post('/api/auth/register', { credential: 'carol', termsVersion: '2000-01-01' })).status,
+  ).toBe(400)
+  expect(
+    (await post('/api/auth/register', { credential: 'carol', termsVersion: TERMS_VERSION })).status,
+  ).toBe(200)
+  const again = await post('/api/auth/google', { credential: 'carol' })
+  expect(await again.json()).toEqual({ registered: true, needsConsent: false })
+})
 
 test('personal data: full sync, then nothing when unchanged, then only the delta', async () => {
   const alice = await signIn('alice')

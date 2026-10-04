@@ -26,14 +26,10 @@
     // Every minute: event notifications. 18:00 UTC (03:00 JST): purge of logically deleted data.
     "crons": ["* * * * *", "0 18 * * *"],
   },
-  "vars": {
-    // Google OAuth client id (public). Set the real one before deploying.
-    "GOOGLE_CLIENT_ID": "",
-    // VAPID public key (base64url, 65-byte uncompressed P-256 point) and contact. Public values.
-    "VAPID_PUBLIC_KEY": "",
-    "VAPID_SUBJECT": "",
-  },
-  // Secrets (`wrangler secret put`, `.dev.vars` locally): SESSION_SECRET, VAPID_PRIVATE_KEY.
+  // No `vars`: environment-specific values are secrets (`wrangler secret put`, `.dev.vars` locally)
+  // so the public repository holds none (root AGENTS.md "Public config values for the frontend").
+  // Required: SESSION_SECRET. Optional (the feature is off while unset): GOOGLE_CLIENT_ID (the
+  // `aud` accepted for Google ID tokens), VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT.
   "observability": {
     "enabled": true,
   },

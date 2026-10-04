@@ -1,12 +1,10 @@
 import { PUBLIC_PATHS, createApp } from 'backend/src/app.ts'
 import { type GoogleVerifier, createGoogleVerifier } from 'backend/src/auth/google.ts'
 import { createSessionCodec } from 'backend/src/auth/session.ts'
-import { createSampleDao } from 'backend/src/dao/sample.memory.ts'
 import { createJobs } from 'backend/src/jobs.ts'
 import { type PushSender, createWebPushSender } from 'backend/src/push/web-push.ts'
 import { createSessionAuthGuard } from 'backend/src/repository/auth-guard.session.ts'
 import { createJobRepository } from 'backend/src/repository/job.repository.ts'
-import { createSampleRepository } from 'backend/src/repository/sample.repository.ts'
 import { createStoreRepository } from 'backend/src/repository/store.repository.ts'
 import { createSyncRepository } from 'backend/src/repository/sync.repository.ts'
 import { createAccountService } from 'backend/src/service/account.service.ts'
@@ -15,7 +13,6 @@ import { createEventService } from 'backend/src/service/event.service.ts'
 import { createGroupService } from 'backend/src/service/group.service.ts'
 import { createImageService } from 'backend/src/service/image.service.ts'
 import { createPushService } from 'backend/src/service/push.service.ts'
-import { createSampleService } from 'backend/src/service/sample.service.ts'
 import { createScheduleService } from 'backend/src/service/schedule.service.ts'
 import { createSyncService } from 'backend/src/service/sync.service.ts'
 
@@ -26,8 +23,28 @@ import { createReadDao } from './dao/read.d1.ts'
 import { createSyncDao } from './dao/sync.d1.ts'
 import { createWriteDao } from './dao/write.d1.ts'
 
-/** Bindings and vars from `wrangler.jsonc`, plus the secrets (`wrangler secret put`). */
-export type WorkerEnv = Env & { SESSION_SECRET: string; VAPID_PRIVATE_KEY: string }
+/**
+ * Bindings from `wrangler.jsonc`, plus the secrets (`wrangler secret put`, `.dev.vars` locally).
+ * The optional ones may be unset: Google login and Web Push then simply fail.
+ */
+export type WorkerEnv = Env & {
+  SESSION_SECRET: string
+  GOOGLE_CLIENT_ID?: string
+  VAPID_PUBLIC_KEY?: string
+  VAPID_PRIVATE_KEY?: string
+  VAPID_SUBJECT?: string
+  /** `.dev.vars` only: `true` turns on the development login while `GOOGLE_CLIENT_ID` is unset. */
+  DEV_LOGIN?: string
+}
+
+/**
+ * Development login (root AGENTS.md "Public config values for the frontend"): takes `dev:<name>`
+ * as the credential and the account id. Only used with `DEV_LOGIN=true` and no `GOOGLE_CLIENT_ID`,
+ * so a deployed Worker with a real client id can never use it.
+ */
+const devLoginVerifier: GoogleVerifier = {
+  verify: async (credential) => (/^dev:[\w-]{1,32}$/.test(credential) ? credential : null),
+}
 
 /** Replaceable in tests: the clock and the outside services. */
 export interface BuildOverrides {
@@ -52,8 +69,11 @@ export const build = (env: WorkerEnv, overrides: BuildOverrides = {}) => {
     groupService: createGroupService(store, runtime),
     syncService: createSyncService(store, createSyncRepository(createSyncDao(env.DB))),
     pushService: createPushService(store, jobRepository, runtime),
-    sampleService: createSampleService(createSampleRepository(createSampleDao())),
-    google: overrides.google ?? createGoogleVerifier(env.GOOGLE_CLIENT_ID),
+    google:
+      overrides.google ??
+      (env.DEV_LOGIN === 'true' && !env.GOOGLE_CLIENT_ID
+        ? devLoginVerifier
+        : createGoogleVerifier(env.GOOGLE_CLIENT_ID ?? '')),
     session,
     auth: { guard: createSessionAuthGuard(session), enabled: true, excludePaths: PUBLIC_PATHS },
   })
@@ -65,9 +85,9 @@ export const build = (env: WorkerEnv, overrides: BuildOverrides = {}) => {
       overrides.push ??
       createWebPushSender(
         {
-          publicKey: env.VAPID_PUBLIC_KEY,
-          privateKey: env.VAPID_PRIVATE_KEY,
-          subject: env.VAPID_SUBJECT,
+          publicKey: env.VAPID_PUBLIC_KEY ?? '',
+          privateKey: env.VAPID_PRIVATE_KEY ?? '',
+          subject: env.VAPID_SUBJECT ?? '',
         },
         runtime.now,
       ),
