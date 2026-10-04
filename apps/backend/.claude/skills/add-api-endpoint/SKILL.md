@@ -10,8 +10,8 @@ description: Add a new API endpoint to apps/backend, following the app.ts -> ser
 ```
 route (src/app.ts) -> service (src/service/*.service.ts)
                     -> repository (src/repository/*.repository.ts)
-                    -> dao (src/dao/*.interface.ts + *.memory.ts;
-                            datastore-backed DAOs in the runtime package)
+                    -> dao (src/dao/*.interface.ts;
+                            D1/R2 implementations in apps/backend-worker/src/dao)
 ```
 
 - A **route** depends only on a service. No business logic or datastore access in `app.ts`.
@@ -22,9 +22,11 @@ route (src/app.ts) -> service (src/service/*.service.ts)
 - A **dao** is the only layer that talks to a datastore, behind an interface, so different
   runtime packages (`apps/backend-*`) can wire in their own concrete DAOs without touching service/repository/route code.
 
-`src/{service,repository,dao}/sample.*`, wired to `GET /sample/:id` in `src/app.ts`, is a worked
-reference for this exact chain. Read it before starting, and copy its shape rather than inventing
-a new one.
+Most endpoints don't need a new DAO: reads go through `ReadDao` / `StoreRepository`
+(`src/dao/read.interface.ts`, `src/repository/store.repository.ts`) and every write through
+`StoreRepository.commit(bumps, mutations)` (one D1 batch, with the sync revisions bumped; see
+`apps/backend/AGENTS.md`). Existing services such as `src/service/schedule.service.ts` are the
+reference. Add a DAO method only for a read the existing ones can't express.
 
 ## Procedure
 
@@ -32,23 +34,20 @@ Build bottom-up — each layer's test needs the layer below it to already have a
 Replace `<name>` below with the resource name (e.g. `widget`), matching the `sample.*` naming
 scheme.
 
-### 1. DAO layer
+### 1. DAO layer (only when a new read is needed)
 
-- `src/dao/<name>.interface.ts` — the raw storage type (`<Name>Record`) and the `<Name>Dao`
-  interface (the methods this endpoint needs, e.g. `findById`).
-- `src/dao/<name>.memory.ts` — a concrete in-memory implementation (`create<Name>Dao`). When/if
-  a real datastore is needed, add its implementation in the runtime package, not here
-  (`apps/backend-*/src/dao/<name>.<datastore>.ts`; see that package's `AGENTS.md`).
-- `src/dao/<name>.memory.test.ts` — co-located test for the concrete DAO (see `sample.memory.test.ts`).
+- Add the method to the interface in `src/dao/*.interface.ts` (raw rows, snake_case types from
+  `src/dao/records.ts`).
+- Implement it in `apps/backend-worker/src/dao/*.d1.ts` and test it there against the local D1
+  (`src/dao/test-env.ts`). There are no in-memory DAOs for the D1 tables.
 
 ### 2. Repository layer
 
 - `src/repository/<name>.repository.ts` — the domain entity type (`<Name>`), the
   `<Name>Repository` interface, and `create<Name>Repository(dao)` mapping the DAO's raw record to
   the domain entity.
-- `src/repository/<name>.repository.test.ts` — co-located test, using a hand-written fake
-  `<Name>Dao` (not the real `.memory` implementation) so the test only exercises the repository's
-  mapping logic (see `sample.repository.test.ts`).
+- Most mapping is `camelize` (`src/repository/case.ts`); test a repository only when it does more
+  than that, with a hand-written fake DAO.
 
 ### 3. Service layer
 
@@ -72,9 +71,8 @@ scheme.
 
 ### 5. Wire real dependencies
 
-- Update the runtime package's entrypoint (in `apps/backend-*/src/`) to construct the real
-  dao -> repository -> service chain and pass it into `createApp`, the same way it already does
-  for `sampleService`.
+- Update `build()` in `apps/backend-worker/src/worker.ts` to construct the new service and pass it
+  into `createApp`, and cover the endpoint end to end in `apps/backend-worker/src/worker.test.ts`.
 
 ### 6. Validate
 
@@ -88,7 +86,7 @@ vp test    # or: vp run backend#test
 - Every file has its test right next to it (`foo.ts` + `foo.test.ts`) — never a separate `test/`
   or `__tests__/` tree.
 - Each layer's test fakes only the interface directly below it, not the real implementation, so
-  layers stay independently testable. The DAO's own test is the only one that touches the real
-  (in this case in-memory) implementation.
-- Once real endpoints make `sample.*` (files and the `/sample/:id` route) unnecessary as a
-  reference, delete them per `apps/backend/AGENTS.md`.
+  layers stay independently testable. The DAO tests and `worker.test.ts` are the ones that touch
+  the real (local D1/R2) implementation.
+- `sample.*` and `/sample/:id` are template leftovers; delete them with the frontend's sample
+  screens (see `apps/backend/AGENTS.md`).

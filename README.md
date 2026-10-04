@@ -1,6 +1,7 @@
-# JIgatame
+# Chocosuke - チョコスケ
 
-Calendar-based schedule management app.
+Calendar-based schedule management app.  
+チョコスケ - 家族で共有するカレンダーアプリ。
 
 ## Development
 

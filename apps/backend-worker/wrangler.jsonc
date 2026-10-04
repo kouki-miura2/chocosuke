@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "jigatame",
+  "name": "chocosuke",
   "main": "src/worker.ts",
   "compatibility_date": "2026-09-11",
   // One origin: the frontend build is served as static assets at `/`, the API at `/api`.
@@ -12,6 +12,28 @@
     // Without this, the SPA fallback would answer unknown `/api/*` paths with index.html.
     "run_worker_first": ["/api/*"],
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "chocosuke",
+      // Placeholder until `wrangler d1 create chocosuke`; local dev and tests don't need a real id.
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations",
+    },
+  ],
+  "r2_buckets": [{ "binding": "IMAGES", "bucket_name": "chocosuke-images" }],
+  "triggers": {
+    // Every minute: event notifications. 18:00 UTC (03:00 JST): purge of logically deleted data.
+    "crons": ["* * * * *", "0 18 * * *"],
+  },
+  "vars": {
+    // Google OAuth client id (public). Set the real one before deploying.
+    "GOOGLE_CLIENT_ID": "",
+    // VAPID public key (base64url, 65-byte uncompressed P-256 point) and contact. Public values.
+    "VAPID_PUBLIC_KEY": "",
+    "VAPID_SUBJECT": "",
+  },
+  // Secrets (`wrangler secret put`, `.dev.vars` locally): SESSION_SECRET, VAPID_PRIVATE_KEY.
   "observability": {
     "enabled": true,
   },

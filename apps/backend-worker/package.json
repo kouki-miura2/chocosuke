@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "node -e \"fs.mkdirSync('../frontend/dist', { recursive: true })\" && wrangler dev",
     "build": "wrangler deploy --dry-run --outdir dist",
-    "deploy": "vp run frontend#build && wrangler deploy",
+    "deploy": "vp run frontend#build && wrangler d1 migrations apply DB --remote && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "check": "vp check"
+    "check": "vp check",
+    "test": "vp test"
   },
   "dependencies": {
     "backend": "workspace:*"
@@ -16,6 +17,7 @@
   "devDependencies": {
     "frontend": "workspace:*",
     "typescript": "catalog:",
+    "utils": "workspace:*",
     "wrangler": "^4.131.1"
   }
 }
