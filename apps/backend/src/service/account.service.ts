@@ -11,7 +11,7 @@ import { leaveWrite } from './membership.ts'
 
 export interface Session {
   userId: string
-  termsVersion: number
+  termsVersion: string
 }
 
 export interface MeView {
@@ -46,7 +46,8 @@ export const createAccountService = (store: StoreRepository, runtime: Runtime): 
       if (!winner) throw error
       return { userId: winner.id, termsVersion: winner.agreedTermsVersion }
     }
-    return { userId: id, termsVersion: 0 }
+    // '' = not agreed to any version yet.
+    return { userId: id, termsVersion: '' }
   },
 
   agreeToTerms: async (userId) => {

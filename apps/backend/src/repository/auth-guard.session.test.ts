@@ -11,17 +11,17 @@ const requestWithCookie = (cookie?: string) =>
   new Request('http://localhost/api/me', { headers: cookie ? { cookie } : {} })
 
 test('resolves the user from a valid session cookie', async () => {
-  const token = await codec.issue({ userId: 'u1', termsVersion: 1 })
+  const token = await codec.issue({ userId: 'u1', termsVersion: '2026-10-01' })
 
   await expect(
     createSessionAuthGuard(codec).authenticate(requestWithCookie(`other=x; session=${token}`)),
-  ).resolves.toEqual({ id: 'u1', termsVersion: 1 })
+  ).resolves.toEqual({ id: 'u1', termsVersion: '2026-10-01' })
 })
 
 test('rejects a missing cookie and a token signed with another secret', async () => {
   const forged = await createSessionCodec('other-secret', () => now).issue({
     userId: 'u1',
-    termsVersion: 1,
+    termsVersion: '2026-10-01',
   })
   const guard = createSessionAuthGuard(codec)
 
@@ -31,7 +31,7 @@ test('rejects a missing cookie and a token signed with another secret', async ()
 
 test('rejects an expired session', async () => {
   const issuedLongAgo = createSessionCodec('test-secret', () => now - 31 * 24 * 60 * 60 * 1000)
-  const token = await issuedLongAgo.issue({ userId: 'u1', termsVersion: 1 })
+  const token = await issuedLongAgo.issue({ userId: 'u1', termsVersion: '2026-10-01' })
 
   await expect(
     createSessionAuthGuard(codec).authenticate(requestWithCookie(`session=${token}`)),

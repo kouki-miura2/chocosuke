@@ -7,7 +7,7 @@ import { createSyncService } from './sync.service.ts'
 const user = (fields: Partial<User> = {}): User => ({
   id: 'u1',
   googleSub: 'sub',
-  agreedTermsVersion: 1,
+  agreedTermsVersion: '2026-10-01',
   groupId: null,
   memberName: null,
   joinedAt: null,

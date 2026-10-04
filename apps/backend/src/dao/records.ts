@@ -6,7 +6,7 @@ export type Scope = 'personal' | 'group'
 export interface UserRecord {
   id: string
   google_sub: string
-  agreed_terms_version: number
+  agreed_terms_version: string
   group_id: string | null
   member_name: string | null
   joined_at: number | null

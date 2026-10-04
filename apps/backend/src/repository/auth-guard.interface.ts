@@ -1,7 +1,7 @@
 export interface AuthenticatedUser {
   id: string
   /** The terms version the user had agreed to when the session was issued. */
-  termsVersion: number
+  termsVersion: string
 }
 
 export interface AuthGuard {

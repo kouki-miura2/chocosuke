@@ -9,7 +9,7 @@ export const sessionMaxAgeSeconds = LIMITS.sessionDays * 24 * 60 * 60
 export interface SessionClaims {
   userId: string
   /** The terms version the user had agreed to when the session was issued. */
-  termsVersion: number
+  termsVersion: string
 }
 
 export interface SessionCodec {
@@ -39,7 +39,7 @@ export const createSessionCodec = (
   read: async (token) => {
     try {
       const payload = await verify(token, secret, 'HS256')
-      return typeof payload.sub === 'string' && typeof payload.tv === 'number'
+      return typeof payload.sub === 'string' && typeof payload.tv === 'string'
         ? { userId: payload.sub, termsVersion: payload.tv }
         : null
     } catch {

@@ -9,7 +9,7 @@
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   google_sub TEXT NOT NULL,
-  agreed_terms_version INTEGER NOT NULL DEFAULT 0,
+  agreed_terms_version TEXT NOT NULL DEFAULT '',
   group_id TEXT,
   member_name TEXT,
   joined_at INTEGER,

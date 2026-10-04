@@ -1,3 +1,4 @@
+import { TERMS_VERSION } from 'utils'
 import { expect, test, vi } from 'vite-plus/test'
 
 import { type AppDependencies, PUBLIC_PATHS, createApp } from './app.ts'
@@ -31,7 +32,7 @@ const createTestApp = (overrides: Partial<AppDependencies> = {}) =>
     ...overrides,
   })
 
-const cookieFor = async (userId = 'u1', termsVersion = 1) =>
+const cookieFor = async (userId = 'u1', termsVersion = TERMS_VERSION) =>
   `session=${await session.issue({ userId, termsVersion })}`
 
 const json = (body: unknown, cookie?: string): RequestInit => ({
@@ -50,7 +51,7 @@ test('rejects requests without a session', async () => {
 test('login verifies the Google credential and sets an HttpOnly session cookie', async () => {
   const app = createTestApp({
     google: { verify: vi.fn(async () => 'google-sub') },
-    accountService: stubs({ login: vi.fn(async () => ({ userId: 'u1', termsVersion: 0 })) }),
+    accountService: stubs({ login: vi.fn(async () => ({ userId: 'u1', termsVersion: '' })) }),
   })
 
   const res = await app.request('/api/auth/google', json({ credential: 'id-token' }))
@@ -75,7 +76,7 @@ test('login rejects an invalid Google credential', async () => {
 test('asks for consent before anything but the consent-free paths', async () => {
   const getMe = vi.fn(async () => ({ id: 'u1', needsConsent: true, groupId: null }))
   const app = createTestApp({ accountService: stubs({ getMe }) })
-  const cookie = await cookieFor('u1', 0)
+  const cookie = await cookieFor('u1', '')
 
   const blocked = await app.request('/api/sync', { headers: { cookie } })
   const allowed = await app.request('/api/me', { headers: { cookie } })

@@ -9,7 +9,7 @@ const now = Date.parse('2026-10-04T01:00:00Z') // 2026-10-04 10:00 JST
 const user: User = {
   id: 'u1',
   googleSub: 'sub',
-  agreedTermsVersion: 1,
+  agreedTermsVersion: '2026-10-01',
   groupId: 'g1',
   memberName: '太郎',
   joinedAt: 0,
