@@ -6,9 +6,8 @@
 
 ## 動作確認が残っている項目
 
-開発用ログイン（下記「開発環境のメモ」）で、ログイン・同意・予定・イベント（画像の添付を含む）・月表示と週表示・グループの作成と招待リンクからの参加・設定・CSV ダウンロード・タブレット横向きの表示は確認済み。次は、実際の鍵・端末・手での操作が要るため未確認。
+開発用ログイン（下記「開発環境のメモ」）で、ログイン・同意・予定・イベント（画像の添付を含む）・月表示と週表示・グループの作成と招待リンクからの参加・設定・CSV ダウンロード・タブレット横向きの表示、本番での Google ログイン（実際のクライアントID・公式ボタン・CSP）は確認済み。次は、実際の鍵・端末・手での操作が要るため未確認。
 
-- [ ] Google ログイン: 実際のクライアントIDで、公式ボタンの表示・ログイン・CSP（`public/_headers`）を確認する。
 - [ ] プッシュ通知: VAPID 鍵を作り、購読 → Cron の送信（`wrangler dev --test-scheduled` で `/__scheduled?cron=*+*+*+*+*`）→ 通知のタップでイベント詳細が開くことを確認する。iOS はホーム画面に追加したアプリで確認する。
 - [ ] 画像の貼り付け（PC の Ctrl+V / ⌘+V、スマートフォンの長押し →「ペースト」）、全画面表示のピンチ拡大。
 - [ ] 予定のドラッグでの並び替え（タッチ操作）。
@@ -20,7 +19,6 @@
 
 - [ ] 利用規約・プライバシーポリシーの本文（`apps/frontend/src/legal/documents.ts`、下書き）を運営者が確認し、`TERMS_VERSION`（`packages/utils/src/terms/terms.ts`）を改定日にする。
 - [ ] API 一覧を spec.md に載せるかの判断。
-- [ ] 試しのデプロイ: `wrangler d1 create chocosuke` で `database_id` を設定し、secret（`SESSION_SECRET`・`GOOGLE_CLIENT_ID`・VAPID の3つ）と `apps/frontend/.env.local` を設定してから、web-security-auditor → cloudflare-deployer。
 - [ ] 見た目の確認が済んだら、spec.md の「画面イメージサンプル」の記載と `docs/design/` を削除する。
 
 ## 開発環境のメモ
@@ -29,4 +27,4 @@
 - 開発用ログイン: `apps/backend-worker/.dev.vars` に `SESSION_SECRET` と `DEV_LOGIN=true` を書き、`GOOGLE_CLIENT_ID` を設定しない。ログイン画面でアカウント名を入れると `dev:<名前>` のアカウントでログインできる（`vp dev` のときだけ表示）。
 - Google ログイン: OAuth クライアントの「承認済みの JavaScript 生成元」に `http://localhost:5173` を登録し、`apps/frontend/.env.local` に `VITE_GOOGLE_WEB_CLIENT_ID`、`.dev.vars` に `GOOGLE_CLIENT_ID` を書く。
 - PWA（Service Worker・manifest）は `vp dev` では動かない。`vp run frontend#build` のあとに `vp run backend-worker#dev` を起動し、`localhost:8787` で確認する（起動後にビルドした場合は Worker を再起動する）。
-- プッシュ通知の確認は HTTPS か `localhost` が必要。スマートフォン実機での確認は、試しのデプロイ先で行う。
+- プッシュ通知の確認は HTTPS か `localhost` が必要。スマートフォン実機での確認は、本番（デプロイ先）で行う。
