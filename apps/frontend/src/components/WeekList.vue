@@ -22,7 +22,9 @@ const dayColor = (date: string) => {
 </script>
 
 <template>
-  <v-list class="week" lines="one">
+  <!-- Rows keyed by date: recentering on a tapped day moves the rows that stay (like a scroll)
+       and fades the ones going and coming. -->
+  <TransitionGroup tag="div" name="week-row" class="week">
     <div
       v-for="date in days"
       :key="date"
@@ -47,12 +49,32 @@ const dayColor = (date: string) => {
         <DayEventList :entries="entries" :date="date" @open="(id) => emit('open', id)" />
       </div>
     </div>
-  </v-list>
+  </TransitionGroup>
 </template>
 
 <style scoped>
 .week {
+  position: relative;
   padding: 0;
+}
+
+.week-row-move,
+.week-row-enter-active,
+.week-row-leave-active {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.week-row-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.week-row-enter-from,
+.week-row-leave-to {
+  opacity: 0;
 }
 
 .week__day {

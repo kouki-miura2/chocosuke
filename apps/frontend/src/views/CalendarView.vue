@@ -61,52 +61,88 @@ const canStep = (direction: 1 | -1) => {
   const days = weekAround(next)
   return days[6] >= range.min && days[0] <= range.max
 }
-const step = (direction: 1 | -1) => {
-  if (canStep(direction)) cursor.anchor = moved(direction)
-}
-// Swipes (docs/spec.md "カレンダー > 画面"): month view left/right, week view up/down, through
-// `step` so never past the dates that can be shown. The week list scrolls vertically, so a swipe
-// only changes the week once the list is at that end (top for back, bottom for forward).
+// Moving to another month/week page (前へ・次へ, swipes, 今日, the month picker): the new page slides
+// in from the side it comes from and starts at its top. The week view is keyed by `weekPage`, so
+// recentering it on a tapped day doesn't slide the page: its rows move instead (WeekList).
 const main = ref<HTMLElement | null>(null)
-const swipe = (direction: 1 | -1) => {
-  if (viewState.viewMode === 'month') step(direction)
-}
-const swipeUp = () => {
-  const el = main.value
-  if (
-    viewState.viewMode === 'week' &&
-    el &&
-    el.scrollTop + el.clientHeight >= el.scrollHeight - 1
-  ) {
-    step(1)
-  }
-}
-const swipeDown = () => {
-  if (viewState.viewMode === 'week' && (main.value?.scrollTop ?? 0) <= 0) step(-1)
-}
-
-// The new month/week slides in from the side it comes from; switching month/week doesn't slide.
 const direction = ref<1 | -1 | 0>(0)
-watch(
-  () => cursor.anchor,
-  (next, previous) => {
-    direction.value = next > previous ? 1 : -1
-    // A new page starts at its top, not where the previous one was scrolled to.
-    main.value?.scrollTo({ top: 0 })
-  },
-)
-watch(
-  () => viewState.viewMode,
-  () => (direction.value = 0),
-)
+const weekPage = ref(0)
+const moveTo = (anchor: string) => {
+  if (anchor === cursor.anchor) return
+  direction.value = anchor > cursor.anchor ? 1 : -1
+  cursor.anchor = anchor
+  weekPage.value++
+  main.value?.scrollTo({ top: 0 })
+}
 const slideName = computed(() => {
   if (direction.value === 0) return 'none'
   if (viewState.viewMode === 'month') return direction.value > 0 ? 'slide-next' : 'slide-prev'
   return direction.value > 0 ? 'slide-up' : 'slide-down'
 })
 
+const step = (direction: 1 | -1) => {
+  if (canStep(direction)) moveTo(moved(direction))
+}
+
+// The week view opens on the selected day (today until one is picked) as its center; switching
+// month/week doesn't slide.
+watch(
+  () => viewState.viewMode,
+  (mode) => {
+    direction.value = 0
+    if (mode === 'week') cursor.anchor = cursor.selected ?? today
+    weekPage.value++
+  },
+)
+
+// Tapping a day of the week view selects it and recenters the 7 days on it.
+const selectWeekDay = (date: string) => {
+  cursor.selected = date
+  cursor.anchor = date
+}
+
+// Swipes (docs/spec.md "カレンダー > 画面"), through `step` so never past the dates that can be
+// shown. Month view: left/right (`v-touch`). Week view: a flick up/down — quick and long enough —
+// changes the week; a slower drag scrolls the list as usual.
+const swipe = (direction: 1 | -1) => {
+  if (viewState.viewMode === 'month') step(direction)
+}
+const FLICK_MS = 300
+const FLICK_PX = 50
+let touchStart: { x: number; y: number; at: number } | null = null
+let touchLast: { x: number; y: number } | null = null
+const touchDown = (event: TouchEvent) => {
+  const touch = event.touches[0]
+  touchStart =
+    event.touches.length === 1 && touch
+      ? { x: touch.clientX, y: touch.clientY, at: event.timeStamp }
+      : null
+  touchLast = touchStart
+}
+const touchMove = (event: TouchEvent) => {
+  const touch = event.touches[0]
+  if (touch) touchLast = { x: touch.clientX, y: touch.clientY }
+}
+// Also on `touchcancel`: a browser that takes the gesture over for scrolling may cancel the touch.
+const touchUp = (event: TouchEvent) => {
+  const start = touchStart
+  const lifted = event.changedTouches[0]
+  const end = lifted ? { x: lifted.clientX, y: lifted.clientY } : touchLast
+  touchStart = null
+  if (viewState.viewMode !== 'week' || !start || !end) return
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  if (
+    event.timeStamp - start.at <= FLICK_MS &&
+    Math.abs(dy) >= FLICK_PX &&
+    Math.abs(dy) > Math.abs(dx) * 1.5
+  ) {
+    step(dy < 0 ? 1 : -1)
+  }
+}
+
 const goToday = () => {
-  cursor.anchor = today
+  moveTo(today)
   cursor.selected = null
 }
 
@@ -134,7 +170,7 @@ const viewModes = [
 const pickingMonth = ref(false)
 const pickMonth = (month: string) => {
   // Month view: that month; week view: the week centered on its first day.
-  cursor.anchor = month
+  moveTo(month)
 }
 
 // The day sheet (phone) or the side panel (tablet in landscape) lists the selected day.
@@ -215,7 +251,11 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
     <div class="calendar__body">
       <div
         ref="main"
-        v-touch="{ left: () => swipe(1), right: () => swipe(-1), up: swipeUp, down: swipeDown }"
+        v-touch="{ left: () => swipe(1), right: () => swipe(-1) }"
+        @touchstart.passive="touchDown"
+        @touchmove.passive="touchMove"
+        @touchend="touchUp"
+        @touchcancel="touchUp"
         class="calendar__main"
       >
         <transition :name="slideName">
@@ -232,12 +272,12 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
           />
           <WeekList
             v-else
-            :key="cursor.anchor"
+            :key="weekPage"
             :entries="entries"
             :center="cursor.anchor"
             :today="today"
             @open="openEvent"
-            @select-day="(date) => (cursor.selected = date)"
+            @select-day="selectWeekDay"
           />
         </transition>
       </div>
