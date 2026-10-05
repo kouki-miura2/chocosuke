@@ -1,3 +1,5 @@
+import { createLogger } from 'utils'
+
 // Web Push with WebCrypto only, so it runs on Cloudflare Workers (the `web-push` npm package needs
 // Node's crypto): payload encryption per RFC 8291 (aes128gcm, RFC 8188) and VAPID per RFC 8292.
 
@@ -162,25 +164,41 @@ export const vapidAuthorization = async (
   return `vapid t=${unsigned}.${toBase64Url(signature)}, k=${keys.publicKey}`
 }
 
-export const createWebPushSender = (keys: VapidKeys, now: () => number): PushSender => ({
-  send: async (target, payload) => {
-    try {
-      const response = await fetch(target.endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: await vapidAuthorization(target.endpoint, keys, now()),
-          'Content-Encoding': 'aes128gcm',
-          'Content-Type': 'application/octet-stream',
-          // Undelivered notifications are useless after the event has likely started.
-          TTL: '3600',
-          Urgency: 'high',
-        },
-        body: await encryptPayload(payload, target),
-      })
-      if (response.status === 404 || response.status === 410) return 'gone'
-      return response.ok ? 'sent' : 'failed'
-    } catch {
-      return 'failed'
-    }
-  },
-})
+/**
+ * Sends through the push service. A rejected push is logged with the service's status and reason
+ * (e.g. Apple's `{"reason":"BadJwtToken"}`), never the endpoint path or keys, so a notification
+ * that doesn't arrive can be traced (`wrangler tail`).
+ */
+export const createWebPushSender = (keys: VapidKeys, now: () => number): PushSender => {
+  const logger = createLogger({ format: 'json' })
+  return {
+    send: async (target, payload) => {
+      const service = new URL(target.endpoint).host
+      try {
+        const response = await fetch(target.endpoint, {
+          method: 'POST',
+          headers: {
+            Authorization: await vapidAuthorization(target.endpoint, keys, now()),
+            'Content-Encoding': 'aes128gcm',
+            'Content-Type': 'application/octet-stream',
+            // Undelivered notifications are useless after the event has likely started.
+            TTL: '3600',
+            Urgency: 'high',
+          },
+          body: await encryptPayload(payload, target),
+        })
+        if (response.status === 404 || response.status === 410) return 'gone'
+        if (response.ok) return 'sent'
+        logger.warn('push rejected', {
+          service,
+          status: response.status,
+          reason: (await response.text()).slice(0, 200),
+        })
+        return 'failed'
+      } catch (error) {
+        logger.warn('push failed', { service, error: String(error) })
+        return 'failed'
+      }
+    },
+  }
+}
