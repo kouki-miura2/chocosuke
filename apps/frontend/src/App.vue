@@ -32,7 +32,12 @@ const tabs = [
         <span>{{ tab.label }}</span>
       </v-btn>
     </v-bottom-navigation>
-    <v-snackbar v-model="notification.visible" location="bottom" :timeout="4000">
+    <v-snackbar
+      v-model="notification.visible"
+      location="bottom"
+      :timeout="4000"
+      :class="`snackbar--${notification.kind}`"
+    >
       {{ notification.message }}
     </v-snackbar>
     <!-- docs/spec.md "共通ルール > 画面": a phone held sideways asks to turn it back. -->
@@ -44,6 +49,17 @@ const tabs = [
 </template>
 
 <style scoped>
+/* Errors on a slightly see-through red, notices on dark grey; white text on both. */
+.snackbar--error :deep(.v-snackbar__wrapper) {
+  background: rgb(var(--v-theme-error), 0.92);
+  color: #fff;
+}
+
+.snackbar--info :deep(.v-snackbar__wrapper) {
+  background: rgb(27, 28, 30, 0.92);
+  color: #fff;
+}
+
 .portrait-only {
   display: none;
 }

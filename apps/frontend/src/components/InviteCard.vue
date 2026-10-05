@@ -26,7 +26,7 @@ watch(
 const copy = async () => {
   try {
     await navigator.clipboard.writeText(link.value)
-    notification.show('招待リンクをコピーしました')
+    notification.show('招待リンクをコピーしました', 'info')
   } catch {
     notification.show('コピーできませんでした')
   }

@@ -20,6 +20,8 @@ export const vuetify = createVuetify({
           background: '#FCFCFF',
           surface: '#FFFFFF',
           'surface-variant': '#E1E2E8',
+          // Vuetify's default is light text for a dark surface-variant: unreadable on this light one.
+          'on-surface-variant': '#44474E',
           'primary-container': '#D3E4FF',
           'on-primary-container': '#001C38',
           sunday: '#C62828',
