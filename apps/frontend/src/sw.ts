@@ -27,15 +27,24 @@ interface WindowClient {
 interface ServiceWorkerScope {
   __WB_MANIFEST: (string | { url: string; revision: string | null })[]
   registration: ServiceWorkerRegistration
+  skipWaiting: () => Promise<void>
   clients: {
+    claim: () => Promise<void>
     matchAll: (options: { type: 'window'; includeUncontrolled: boolean }) => Promise<WindowClient[]>
     openWindow: (url: string) => Promise<WindowClient | null>
   }
   addEventListener: ((type: 'push', listener: (event: PushEvent) => void) => void) &
-    ((type: 'notificationclick', listener: (event: NotificationEvent) => void) => void)
+    ((type: 'notificationclick', listener: (event: NotificationEvent) => void) => void) &
+    ((type: 'install' | 'activate', listener: (event: ExtendableEvent) => void) => void)
 }
 
 const sw = self as unknown as ServiceWorkerScope
+
+// A new version takes over as soon as it's installed (`registerType: 'autoUpdate'` relies on it with
+// our own service worker): otherwise it waits until every window of the app is closed, which an
+// app kept in the background on a phone hardly ever is, and the old build keeps being served.
+sw.addEventListener('install', () => void sw.skipWaiting())
+sw.addEventListener('activate', (event) => event.waitUntil(sw.clients.claim()))
 
 // Written out as `self.__WB_MANIFEST`: the build looks for exactly that to inject the file list.
 precacheAndRoute((self as unknown as ServiceWorkerScope).__WB_MANIFEST)

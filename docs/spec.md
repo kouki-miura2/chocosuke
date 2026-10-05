@@ -132,11 +132,6 @@ Calendar-based schedule management app.
 - 以降は「####」で、項目・状態・画面・操作・例外などに分けて書く。
 -->
 
-- 画面イメージサンプル ※実装後に"画面イメージサンプル"は削除する
-  https://claude.ai/artifact/2RgV6dX5fhzp8zEg6yN6Jo
-  上記は外部URLのため、HTML+CSS+JSを以下にコピーする ※実装後に削除する
-  .\docs\design\
-
 ### ログイン・同意
 
 - Googleでログインする。初回登録時、または利用規約・プライバシーポリシー改定後に初めてアプリを開いたときに同意を取得する。
@@ -541,6 +536,7 @@ Calendar-based schedule management app.
   - Cloudflare Workers Cron Trigger（通知送信: 1分ごと、物理削除: 1日1回）
 - frontend
   - Vue3 + Vuetify4 の Webアプリ（PWA）
+  - Service Worker は新しい版がインストールされた時点で切り替わる（`skipWaiting`・`clients.claim`）。ホーム画面のアプリはバックグラウンドに残りがちで、待たせると古い版が使われ続けるため。
   - Vuetify4のv-calendar
     https://vuetifyjs.com/ja/components/calendars/#section-4f7f304465b9
   - ローカルDB: IndexedDB + `idb`（「データ取得・同期」参照）
