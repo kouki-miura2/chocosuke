@@ -20,13 +20,12 @@ const { signOut } = useAuth()
 const { clearDevice, withdraw } = useAccountMutations()
 const push = usePush()
 
+// iPhone/iPad in a browser tab: the switch gives way to the install guide.
+const homeScreenFirst = !!vapidPublicKey && needsHomeScreen()
 const pushNote = computed(() => {
   if (!vapidPublicKey) return 'このアプリでは通知を設定できません（未設定）'
-  if (!pushSupported()) {
-    return needsHomeScreen()
-      ? 'iPhone・iPadでは、ホーム画面に追加したアプリで通知を受け取れます'
-      : 'このブラウザは通知に対応していません'
-  }
+  if (homeScreenFirst) return 'iPhone・iPadでは、ホーム画面に追加したアプリで通知を受け取れます'
+  if (!pushSupported()) return 'このブラウザは通知に対応していません'
   if (push.permission.value === 'denied')
     return '通知がブロックされています。ブラウザの設定で許可してください'
   return 'この端末でイベントの通知を受け取ります'
@@ -92,7 +91,15 @@ const leave = async () => {
       <v-list-subheader>通知</v-list-subheader>
       <v-list-item title="この端末で通知を受け取る" :subtitle="pushNote" lines="two">
         <template #append>
+          <v-btn
+            v-if="homeScreenFirst"
+            text="インストール"
+            variant="tonal"
+            color="primary"
+            @click="installGuide = 'ios'"
+          />
           <v-switch
+            v-else
             :model-value="push.enabled.value"
             :disabled="!vapidPublicKey || !pushSupported() || push.permission.value === 'denied'"
             :loading="push.busy.value"

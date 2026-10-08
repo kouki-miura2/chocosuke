@@ -2,6 +2,8 @@ import { onMounted, ref } from 'vue'
 
 import { call } from '../api/call.ts'
 import { apiClient } from '../api/client.ts'
+import { isIos } from '../lib/install.ts'
+import { runningStandalone } from './usePwaInstall.ts'
 
 // Web Push on this device (docs/spec.md "通知"): the subscription lives in the service worker
 // (`src/sw.ts`); the server keeps one row per subscribed device.
@@ -18,8 +20,7 @@ export const pushSupported = (): boolean =>
 
 /** iOS delivers push only to the app added to the home screen. */
 export const needsHomeScreen = (): boolean =>
-  /iPhone|iPad|iPod/.test(navigator.userAgent) &&
-  !window.matchMedia('(display-mode: standalone)').matches
+  isIos(navigator.userAgent, navigator.maxTouchPoints) && !runningStandalone()
 
 const currentSubscription = async (): Promise<PushSubscription | null> => {
   if (!pushSupported()) return null

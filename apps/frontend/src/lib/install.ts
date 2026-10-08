@@ -5,7 +5,8 @@
 export type InstallGuide = 'ios' | 'other'
 
 /** iPhone/iPad (iPadOS Safari reports a Mac, told apart by its touch screen). */
-export const installGuideFor = (userAgent: string, maxTouchPoints: number): InstallGuide =>
+export const isIos = (userAgent: string, maxTouchPoints: number): boolean =>
   /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && maxTouchPoints > 1)
-    ? 'ios'
-    : 'other'
+
+export const installGuideFor = (userAgent: string, maxTouchPoints: number): InstallGuide =>
+  isIos(userAgent, maxTouchPoints) ? 'ios' : 'other'
