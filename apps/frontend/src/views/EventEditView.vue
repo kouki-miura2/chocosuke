@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { LIMITS, charLength } from 'utils'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -18,6 +18,7 @@ import {
   validateEventForm,
 } from '../lib/event-form.ts'
 import { today } from '../lib/format.ts'
+import { mapEmbedUrl } from '../lib/map.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 
 // Event registration and editing (docs/spec.md "イベント > 画面"), full screen.
@@ -84,6 +85,18 @@ watch(
     }
   },
 )
+
+// A map of the location, 1 second after the last change, to check Google finds the place.
+const mapLocation = ref(form.value.location.trim())
+let mapTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => form.value.location.trim(),
+  (location) => {
+    clearTimeout(mapTimer)
+    mapTimer = setTimeout(() => (mapLocation.value = location), 1000)
+  },
+)
+onBeforeUnmount(() => clearTimeout(mapTimer))
 
 const errors = computed(() =>
   validateEventForm(form.value, app.data.value.events, new Date(), props.id),
@@ -215,6 +228,13 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           clearable
           @update:model-value="(value: string | null) => (form.location = value ?? '')"
         />
+        <iframe
+          v-if="mapLocation"
+          :src="mapEmbedUrl(mapLocation)"
+          :title="`${mapLocation} の地図`"
+          class="edit__map"
+          referrerpolicy="no-referrer"
+        />
         <v-text-field
           :model-value="form.url"
           label="URL（任意）"
@@ -293,6 +313,14 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
 
 .edit__time {
   flex: 0 0 120px;
+}
+
+.edit__map {
+  display: block;
+  width: 100%;
+  height: 200px;
+  border: 0;
+  border-radius: 8px;
 }
 
 .edit__errors {
