@@ -36,6 +36,7 @@
     "vite-plus": "catalog:",
     "vue-tsc": "^3.3.11",
     "workbox-precaching": "catalog:",
-    "workbox-routing": "catalog:"
+    "workbox-routing": "catalog:",
+    "workbox-window": "catalog:"
   }
 }

@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/vue" />
 
 // Build-time public config (root AGENTS.md "Public config values for the frontend"). Values live in
 // `.env.local`; every optional one may be unset, and the app still runs.

@@ -20,7 +20,7 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,woff2,png,svg}'],
         // The Japanese text fonts (2 MB) come from the HTTP cache instead; offline falls back to the

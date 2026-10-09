@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { runningStandalone } from './composables/usePwaInstall.ts'
+import { usePwaUpdate } from './composables/usePwaUpdate.ts'
 import { useNotificationStore } from './stores/notification.ts'
 
 const notification = useNotificationStore()
 const route = useRoute()
 const showNav = computed(() => route.meta.nav === true)
+const { needRefresh, update } = usePwaUpdate()
 
 // Full screen from the home screen, the bottom navigation sits right at the screen's edge (by the
 // home indicator of an iPhone): taller there than in a browser tab (Vuetify's default 56px).
@@ -39,6 +41,19 @@ const tabs = [
       :class="`snackbar--${notification.kind}`"
     >
       {{ notification.message }}
+    </v-snackbar>
+    <!-- A new version of the app: stays until tapped, behind any other message shown meanwhile. -->
+    <v-snackbar
+      :model-value="needRefresh && !notification.visible"
+      location="bottom"
+      :timeout="-1"
+      class="snackbar--info"
+    >
+      新しいバージョンがあります
+      <template #actions>
+        <v-btn variant="text" @click="needRefresh = false">後で</v-btn>
+        <v-btn variant="text" color="primary-container" @click="update">更新</v-btn>
+      </template>
     </v-snackbar>
     <!-- docs/spec.md "共通ルール > 画面": a phone held sideways asks to turn it back. -->
     <div class="portrait-only">

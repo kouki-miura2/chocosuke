@@ -35,15 +35,18 @@ interface ServiceWorkerScope {
   }
   addEventListener: ((type: 'push', listener: (event: PushEvent) => void) => void) &
     ((type: 'notificationclick', listener: (event: NotificationEvent) => void) => void) &
-    ((type: 'install' | 'activate', listener: (event: ExtendableEvent) => void) => void)
+    ((type: 'activate', listener: (event: ExtendableEvent) => void) => void) &
+    ((type: 'message', listener: (event: MessageEvent) => void) => void)
 }
 
 const sw = self as unknown as ServiceWorkerScope
 
-// A new version takes over as soon as it's installed (`registerType: 'autoUpdate'` relies on it with
-// our own service worker): otherwise it waits until every window of the app is closed, which an
-// app kept in the background on a phone hardly ever is, and the old build keeps being served.
-sw.addEventListener('install', () => void sw.skipWaiting())
+// A new version waits until the person taps "更新" on the snackbar (`registerType: 'prompt'`,
+// `usePwaUpdate`), which sends this message; the page reloads once it has taken over. Taking over
+// unasked would swap the cached files under a page still running the old build.
+sw.addEventListener('message', (event) => {
+  if ((event.data as { type?: string } | null)?.type === 'SKIP_WAITING') void sw.skipWaiting()
+})
 sw.addEventListener('activate', (event) => event.waitUntil(sw.clients.claim()))
 
 // Written out as `self.__WB_MANIFEST`: the build looks for exactly that to inject the file list.
