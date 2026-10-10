@@ -5,7 +5,7 @@ import {
 } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 
-// The service worker (implementation plan F2): precaches the app so it opens without a network
+// The service worker: precaches the app so it opens without a network
 // (the local DB is shown; docs/spec.md "共通ルール > オフライン"), never caches `/api`, and shows
 // the event notifications (docs/spec.md "通知").
 

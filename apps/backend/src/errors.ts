@@ -1,5 +1,5 @@
 /**
- * Error codes the API returns as `{ error: code }` (docs/implementation-plan.md "エラー"). The
+ * Error codes the API returns as `{ error: code }`. The
  * frontend picks the message by code. Services throw `AppError`; only `app.ts` maps a code to an
  * HTTP status.
  */

@@ -12,7 +12,7 @@ export interface DueEventRecord {
   owner_id: string
 }
 
-/** Data access for the cron jobs (docs/implementation-plan.md "Cron"). */
+/** Data access for the cron jobs. */
 export interface JobDao {
   /** Live events with `notify_at <= now`, oldest first, at most `limit`. */
   listDueEvents: (now: number, limit: number) => Promise<DueEventRecord[]>

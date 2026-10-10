@@ -10,7 +10,7 @@ export interface NewImage {
   height: number
 }
 
-// An image can take longer than the API's usual 3 s on a mobile connection (implementation plan F8).
+// An image can take longer than the API's usual 3 s on a mobile connection.
 const UPLOAD_TIMEOUT_MS = 30_000
 
 const uploadImage = (eventId: string, image: NewImage) => {

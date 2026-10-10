@@ -14,7 +14,7 @@ export default defineConfig({
   plugins: [
     vue(),
     vuetify({ autoImport: true }),
-    // PWA (implementation plan F2): our own service worker (`src/sw.ts`, push notifications), with
+    // PWA: our own service worker (`src/sw.ts`, push notifications), with
     // the app precached; `/api` is never cached. Off in `vp dev`.
     VitePWA({
       strategies: 'injectManifest',
