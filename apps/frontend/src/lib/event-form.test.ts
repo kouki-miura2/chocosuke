@@ -11,6 +11,7 @@ import {
   timeOptions,
   toEventInput,
   validateEventForm,
+  withStartTime,
 } from './event-form.ts'
 
 const now = new Date('2026-10-04T00:00:00Z')
@@ -92,6 +93,33 @@ test('offers the notifications of the event kind', () => {
   expect(validateEventForm(form({ allDay: true, notifyMinutes: 10 }), [], now)).toContain(
     '通知を選び直してください',
   )
+})
+
+test('moves the end time of a new same-day event to the chosen start time', () => {
+  expect(withStartTime(form(), '15:00', true)).toMatchObject({
+    startTime: '15:00',
+    endTime: '15:00',
+  })
+  expect(withStartTime(form(), '09:00', true).endTime).toBe('09:00')
+})
+
+test('keeps the end time of an existing event that is still after the start', () => {
+  const saved = form({ startTime: '10:00', endTime: '17:00' })
+
+  expect(withStartTime(saved, '10:30', false)).toMatchObject({
+    startTime: '10:30',
+    endTime: '17:00',
+  })
+  expect(withStartTime(saved, '18:00', false).endTime).toBe('18:00')
+})
+
+test('keeps the end time of a multi-day event', () => {
+  const multiDay = form({ endDate: '2026-10-06' })
+
+  expect(withStartTime(multiDay, '15:00', true)).toMatchObject({
+    startTime: '15:00',
+    endTime: '11:00',
+  })
 })
 
 test('keeps the length of the event when the start date moves', () => {

@@ -185,6 +185,16 @@ const fullDay = (form: EventForm, events: CalendarEvent[], editingId?: string): 
   return null
 }
 
+/**
+ * The form with a chosen start time. The end time of a same-day event moves to it, so the end's
+ * list opens there. An existing event keeps an end that's still after the start.
+ */
+export const withStartTime = (form: EventForm, startTime: string, isNew: boolean): EventForm => {
+  const sameDay = form.endDate === form.startDate
+  const moveEnd = sameDay && (isNew || !form.endTime || form.endTime <= startTime)
+  return { ...form, startTime, endTime: moveEnd ? startTime : form.endTime }
+}
+
 /** When the start date moves, the end keeps the same distance (and never goes before the start). */
 export const shiftEndDate = (form: EventForm, previousStart: string): string => {
   const length = Math.max(0, daysBetween(previousStart, form.endDate))

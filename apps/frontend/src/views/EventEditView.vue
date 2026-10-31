@@ -16,6 +16,7 @@ import {
   timeOptions,
   toEventInput,
   validateEventForm,
+  withStartTime,
 } from '../lib/event-form.ts'
 import { today } from '../lib/format.ts'
 import { mapEmbedUrl } from '../lib/map.ts'
@@ -194,11 +195,12 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           <DateField v-model="form.startDate" label="開始日" />
           <v-select
             v-if="!form.allDay"
-            v-model="form.startTime"
+            :model-value="form.startTime"
             :items="timeOptions(form.startTime)"
             label="開始時刻"
             class="edit__time"
             hide-details
+            @update:model-value="(time: string) => (form = withStartTime(form, time, !id))"
           />
         </div>
         <div class="edit__row">
