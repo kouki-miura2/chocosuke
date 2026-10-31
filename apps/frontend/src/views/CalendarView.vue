@@ -378,7 +378,7 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
   padding: 0 12px;
 }
 
-/* Second row: the selected day on the left half, the month/week toggle on the right half. */
+/* Second row: the selected day on the left, the fixed-width month/week toggle at the right edge. */
 .calendar__bar {
   display: flex;
   flex-shrink: 0;
@@ -399,7 +399,8 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
 
 .calendar__mode {
   display: flex;
-  flex: 1;
+  flex: none;
+  width: 160px;
   height: 32px;
 }
 
