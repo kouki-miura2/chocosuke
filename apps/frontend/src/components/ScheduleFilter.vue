@@ -37,10 +37,15 @@ const tap = (scheduleId: string) => {
       :key="schedule.id"
       type="button"
       class="filter__chip"
+      :class="{ 'filter__chip--personal': schedule.scope === 'personal' }"
       :style="
         viewState.hiddenScheduleIds.includes(schedule.id)
           ? { borderColor: '#C4C6CF' }
-          : { background: `${scheduleColor(schedule.color)}1F`, borderColor: 'transparent' }
+          : {
+              background: `${scheduleColor(schedule.color)}1F`,
+              borderColor:
+                schedule.scope === 'personal' ? scheduleColor(schedule.color) : 'transparent',
+            }
       "
       @pointerdown="press(schedule.id)"
       @pointerup="release"
@@ -57,7 +62,7 @@ const tap = (scheduleId: string) => {
             ? 'mdi-check'
             : schedule.scope === 'group'
               ? 'mdi-account-group'
-              : 'mdi-account'
+              : 'mdi-lock'
         "
       />
       {{ schedule.name }}
@@ -89,5 +94,11 @@ const tap = (scheduleId: string) => {
   /* No text selection or callout menu on a long press. */
   user-select: none;
   -webkit-touch-callout: none;
+}
+
+/* A double border needs 3px to render; the padding gives back the extra 2px. */
+.filter__chip--personal {
+  padding: 0 10px 0 6px;
+  border: 3px double;
 }
 </style>
