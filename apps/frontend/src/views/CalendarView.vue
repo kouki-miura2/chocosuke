@@ -22,6 +22,7 @@ import {
   weekdayOf,
 } from '../lib/format.ts'
 import { useCalendarStore } from '../stores/calendar.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import { useViewStateStore } from '../stores/view-state.ts'
 
 // The calendar (docs/spec.md "カレンダー"): month or week view of the local data, the schedule
@@ -31,6 +32,7 @@ const router = useRouter()
 const app = useAppData()
 const viewState = useViewStateStore()
 const cursor = useCalendarStore()
+const network = useNetworkStore()
 const { width, height } = useDisplay()
 
 const today = todayOf()
@@ -295,6 +297,7 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
       rounded="lg"
       elevation="4"
       aria-label="イベントを登録"
+      :disabled="network.offline"
       @click="addEvent"
     />
 
@@ -308,6 +311,7 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
             size="small"
             prepend-icon="mdi-plus"
             text="イベント追加"
+            :disabled="network.offline"
             @click="addEvent"
           />
         </template>
@@ -335,7 +339,7 @@ const addEvent = () => router.push({ name: 'event-new', query: { date: cursor.se
 .calendar {
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - var(--v-layout-bottom, 0px));
+  height: calc(100dvh - var(--v-layout-top, 0px) - var(--v-layout-bottom, 0px));
 }
 
 .calendar__header {

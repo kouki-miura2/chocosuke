@@ -3,7 +3,7 @@ import { expect, test } from 'vite-plus/test'
 
 import type { Schedule, SyncResponse } from '../api/types.ts'
 import { applySync, syncQuery } from './apply-sync.ts'
-import { clearAll, openLocalDb, readAll, readSyncState } from './local-db.ts'
+import { clearAll, markSignedOut, openLocalDb, readAll, readSyncState } from './local-db.ts'
 
 let dbCount = 0
 const freshDb = () => openLocalDb(`test-${++dbCount}`)
@@ -62,6 +62,29 @@ test('stores a full sync, then a delta that updates and deletes by id', async ()
   expect(data.schedules).toEqual([schedule('a', 'u1', { name: '仕事' })])
   expect(data).toMatchObject({ userId: 'u1', personalRev: 3, scheduleOrder: ['a'] })
   expect(syncQuery(data)).toEqual({ personalRev: '3' })
+})
+
+test('signing out keeps the data, and the next sync shows it again', async () => {
+  const db = await freshDb()
+  const response = {
+    groupId: null,
+    personal: { ...unit(1, true, [schedule('a', 'u1')]), scheduleOrder: [] },
+    group: null,
+  } as SyncResponse
+  await applySync(db, 'u1', response)
+
+  await markSignedOut(db)
+
+  expect(await readAll(db)).toMatchObject({
+    userId: 'u1',
+    signedOut: true,
+    personalRev: 1,
+    schedules: [schedule('a', 'u1')],
+  })
+
+  await applySync(db, 'u1', { groupId: null, personal: null, group: null } as SyncResponse)
+
+  expect((await readSyncState(db)).signedOut).toBe(false)
 })
 
 test('a full unit replaces what the device held of it', async () => {

@@ -3,7 +3,7 @@ import { TERMS_VERSION } from 'utils'
 
 import { call } from '../api/call.ts'
 import { apiClient } from '../api/client.ts'
-import { clearAll, localDb } from '../db/local-db.ts'
+import { clearAll, localDb, markSignedOut } from '../db/local-db.ts'
 import { useAuthStore } from '../stores/auth.ts'
 import { useViewStateStore } from '../stores/view-state.ts'
 
@@ -49,6 +49,7 @@ export const useAuth = () => {
   const signOut = useMutation({
     mutationFn: async () => {
       await call(apiClient.api.auth.logout.$post())
+      await markSignedOut(await localDb())
       queryClient.clear()
     },
   })

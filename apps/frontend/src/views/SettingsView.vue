@@ -9,6 +9,7 @@ import { useAuth } from '../composables/useAuth.ts'
 import { needsHomeScreen, pushSupported, usePush, vapidPublicKey } from '../composables/usePush.ts'
 import { usePwaInstall } from '../composables/usePwaInstall.ts'
 import type { InstallGuide } from '../lib/install.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 import { useViewStateStore } from '../stores/view-state.ts'
 
@@ -16,6 +17,7 @@ import { useViewStateStore } from '../stores/view-state.ts'
 const router = useRouter()
 const viewState = useViewStateStore()
 const notification = useNotificationStore()
+const network = useNetworkStore()
 const { signOut } = useAuth()
 const { clearDevice, withdraw } = useAccountMutations()
 const push = usePush()
@@ -101,7 +103,12 @@ const leave = async () => {
           <v-switch
             v-else
             :model-value="push.enabled.value"
-            :disabled="!vapidPublicKey || !pushSupported() || push.permission.value === 'denied'"
+            :disabled="
+              !vapidPublicKey ||
+              !pushSupported() ||
+              push.permission.value === 'denied' ||
+              network.offline
+            "
             :loading="push.busy.value"
             color="primary"
             hide-details
@@ -134,16 +141,23 @@ const leave = async () => {
       />
 
       <v-list-subheader>アカウント</v-list-subheader>
-      <v-list-item prepend-icon="mdi-logout" title="ログアウト" @click="confirming = 'logout'" />
+      <v-list-item
+        prepend-icon="mdi-logout"
+        title="ログアウト"
+        :disabled="network.offline"
+        @click="confirming = 'logout'"
+      />
       <v-list-item
         prepend-icon="mdi-cellphone-remove"
         title="この端末のデータを消去"
+        :disabled="network.offline"
         @click="confirming = 'clear'"
       />
       <v-list-item
         prepend-icon="mdi-account-remove-outline"
         title="退会"
         base-color="error"
+        :disabled="network.offline"
         @click="confirming = 'withdraw'"
       />
     </v-list>

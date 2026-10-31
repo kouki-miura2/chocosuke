@@ -18,6 +18,8 @@ export const ALL_STORES = [...RECORD_STORES, 'kv'] as const
 export interface SyncState {
   /** Whose data this is; another user signing in empties the DB first. */
   userId: string | null
+  /** Signed out: the data stays for the next sign-in, but isn't shown until then. */
+  signedOut: boolean
   personalRev: number | null
   groupId: string | null
   groupRev: number | null
@@ -27,6 +29,7 @@ export interface SyncState {
 
 export const emptySyncState: SyncState = {
   userId: null,
+  signedOut: false,
   personalRev: null,
   groupId: null,
   groupRev: null,
@@ -81,6 +84,11 @@ export const readAll = async (db: LocalDb): Promise<LocalData> => {
     db.getAll('images'),
   ])
   return { ...state, schedules, topics, events, images }
+}
+
+/** Stops showing the data until the next sync stores data for a signed-in user. */
+export const markSignedOut = async (db: LocalDb): Promise<void> => {
+  await db.put('kv', { ...(await readSyncState(db)), signedOut: true }, 'sync')
 }
 
 /** Empties the whole local DB, view state included. */

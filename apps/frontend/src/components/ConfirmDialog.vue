@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useNetworkStore } from '../stores/network.ts'
+
 // A yes/no question before a destructive action (docs/spec.md: deletes, leaving, withdrawal).
 defineProps<{
   title: string
@@ -9,6 +11,7 @@ defineProps<{
 }>()
 const open = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ confirm: [] }>()
+const network = useNetworkStore()
 </script>
 
 <template>
@@ -23,6 +26,7 @@ const emit = defineEmits<{ confirm: [] }>()
           :color="danger ? 'error' : 'primary'"
           :text="confirmText ?? 'OK'"
           :loading="loading"
+          :disabled="network.offline"
           @click="emit('confirm')"
         />
       </v-card-actions>

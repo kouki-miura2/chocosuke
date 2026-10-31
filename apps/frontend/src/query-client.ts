@@ -23,7 +23,11 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     // Without `retry: false`, TanStack Query's 3 retries with exponential backoff turn one
     // 3s-timeout request into ~20s before the error surfaces. A 4xx never gets better anyway.
-    queries: { retry: false },
+    // `networkMode: 'always'`: offline, a request fails at once. The default holds it until the
+    // connection is back and then sends it, so a change given up on (even withdrawal) would still
+    // happen, and the router guard would wait forever.
+    queries: { retry: false, networkMode: 'always' },
+    mutations: { networkMode: 'always' },
   },
 })
 

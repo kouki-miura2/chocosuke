@@ -96,7 +96,7 @@ const devName = ref('alice')
   display: flex;
   flex-direction: column;
   max-width: 440px;
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
   padding: 24px 24px max(32px, env(safe-area-inset-bottom));
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { ApiError, errorMessage } from '../api/call.ts'
 import { useGroupMutations, useInviteQuery } from '../composables/useGroupMutations.ts'
+import { useNetworkStore } from '../stores/network.ts'
 
 // Joining a group from an invite link (docs/spec.md "グループ > 画面 > グループ参加"). A signed-out
 // user comes back here after login (and consent) through the router guard's `redirect`.
@@ -12,6 +13,7 @@ const props = defineProps<{ token: string }>()
 const router = useRouter()
 const invite = useInviteQuery(() => props.token)
 const { join } = useGroupMutations()
+const network = useNetworkStore()
 
 const memberName = ref('')
 const nameError = computed(() => {
@@ -62,7 +64,7 @@ const submit = async () => {
         size="large"
         color="primary"
         text="参加"
-        :disabled="nameError !== null"
+        :disabled="nameError !== null || network.offline"
         :loading="join.isPending.value"
         @click="submit"
       />

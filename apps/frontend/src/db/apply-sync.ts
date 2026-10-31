@@ -25,7 +25,7 @@ export const applySync = async (db: LocalDb, userId: string, response: SyncRespo
   const tx = db.transaction(ALL_STORES, 'readwrite')
   const kv = tx.objectStore('kv')
   const state = ((await kv.get('sync')) as SyncState | undefined) ?? emptySyncState
-  const next: SyncState = { ...state, userId }
+  const next: SyncState = { ...state, userId, signedOut: false }
 
   const removeOwner = async (ownerId: string) => {
     for (const store of RECORD_STORES) {

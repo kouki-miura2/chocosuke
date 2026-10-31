@@ -17,13 +17,14 @@ Server data flows one way: sync API → local DB → memory (docs/spec.md "デ�
 - `useSyncQuery` (`src/composables/useSyncQuery.ts`) is the only query of the app data: sync → local DB → return everything. `main.ts` seeds it from the local DB before mounting, so the screen shows data before the first sync returns.
 - Screens read it through `useAppData()` (ordering, lookups, calendar entries as `computed`s). Filters, counts and ordering are computed from the local data, never asked of the API.
 - Changes go through `useSyncingMutation` (in `use*Mutations.ts`): call the API, then `invalidateQueries(['sync'])`. Never patch the local data with an API response.
+- Offline is read-only (docs/spec.md "共通ルール > オフライン"): any control that calls the API gets `:disabled="network.offline"` (`useNetworkStore`, `src/stores/network.ts`). `networkMode: 'always'` in `src/query-client.ts` is what stops a change from being held and sent on reconnect; keep it.
 
 ## State
 
 State is split by kind — don't reach for Pinia as a catch-all:
 
 - Server state goes through TanStack Query as above, wrapped in composables under `src/composables/` rather than called inline in components. Never store API response data in a Pinia store.
-- Pinia (`src/stores`, one store per domain) is for global UI state only: the snackbar (`notification.ts`), the per-device view state saved in the local DB (`view-state.ts`), the sign-in in progress (`auth.ts`), where the calendar is (`calendar.ts`). Define stores with the setup-function style, not the Options style, and don't call the API from inside a Pinia action; that's TanStack Query's job. Nothing is stored in localStorage/sessionStorage (docs/spec.md "端末への保存").
+- Pinia (`src/stores`, one store per domain) is for global UI state only: the snackbar (`notification.ts`), the per-device view state saved in the local DB (`view-state.ts`), the sign-in in progress (`auth.ts`), where the calendar is (`calendar.ts`), whether the device is offline (`network.ts`). Define stores with the setup-function style, not the Options style, and don't call the API from inside a Pinia action; that's TanStack Query's job. Nothing is stored in localStorage/sessionStorage (docs/spec.md "端末への保存").
 - Local/component state (modal open/closed, form inputs, per-component derived values) stays in composables or component `ref`s — don't promote it to Pinia just because it's convenient.
 - Don't destructure values out of `props` or a `reactive` object; it breaks reactivity. Use `toRefs()` or `toValue()` instead. Default to `ref()` for single values, `reactive()` only for grouping related fields (e.g. a form's values), and `ref()` when in doubt.
 - When sharing state via `provide`/`inject`, type the key with `InjectionKey<T>` and expose access through a composable (e.g. `useMyContext()`) instead of calling `inject` directly at each call site.

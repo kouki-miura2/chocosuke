@@ -5,12 +5,14 @@ import { computed, ref, watch } from 'vue'
 import type { GroupInfo } from '../api/types.ts'
 import { useGroupMutations } from '../composables/useGroupMutations.ts'
 import { formatDateTime } from '../lib/format.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 
 // The invite (docs/spec.md "グループ > 画面"): QR code made on the device, expiry, copy, reissue.
 const props = defineProps<{ info: GroupInfo }>()
 const { reissueInvite } = useGroupMutations()
 const notification = useNotificationStore()
+const network = useNetworkStore()
 
 const link = computed(() => `${window.location.origin}/invite/${props.info.inviteToken}`)
 const expired = computed(() => props.info.inviteExpiresAt <= Date.now())
@@ -57,6 +59,7 @@ const copy = async () => {
         prepend-icon="mdi-refresh"
         text="再発行"
         :loading="reissueInvite.isPending.value"
+        :disabled="network.offline"
         @click="reissueInvite.mutate()"
       />
     </v-card-actions>

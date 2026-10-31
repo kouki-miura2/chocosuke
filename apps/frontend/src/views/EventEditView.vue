@@ -20,6 +20,7 @@ import {
 } from '../lib/event-form.ts'
 import { today } from '../lib/format.ts'
 import { mapEmbedUrl } from '../lib/map.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import { useNotificationStore } from '../stores/notification.ts'
 
 // Event registration and editing (docs/spec.md "イベント > 画面"), full screen.
@@ -29,6 +30,7 @@ const router = useRouter()
 const app = useAppData()
 const { save, remove } = useEventMutations()
 const notification = useNotificationStore()
+const network = useNetworkStore()
 
 const startDate = typeof route.query.date === 'string' ? route.query.date : today()
 const form = ref(emptyEventForm(startDate))
@@ -153,10 +155,21 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           class="mr-2"
           text="保存"
           :loading="save.isPending.value"
-          :disabled="!loaded"
+          :disabled="!loaded || network.offline"
           @click="submit"
         />
       </v-toolbar>
+      <!-- This full-screen dialog covers the offline bar; what's typed stays until back online. -->
+      <v-alert
+        v-if="network.offline"
+        type="warning"
+        variant="tonal"
+        density="compact"
+        rounded="0"
+        class="edit__offline"
+        icon="mdi-wifi-off"
+        text="オフラインのため保存できません"
+      />
       <v-card-text v-if="loaded" class="edit">
         <v-text-field
           v-model="form.title"
@@ -231,7 +244,7 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           @update:model-value="(value: string | null) => (form.location = value ?? '')"
         />
         <iframe
-          v-if="mapLocation"
+          v-if="mapLocation && !network.offline"
           :src="mapEmbedUrl(mapLocation)"
           :title="`${mapLocation} の地図`"
           class="edit__map"
@@ -273,6 +286,7 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
           prepend-icon="mdi-delete-outline"
           text="このイベントを削除"
           class="mt-6"
+          :disabled="network.offline"
           @click="confirming = true"
         />
       </v-card-text>
@@ -296,6 +310,11 @@ const counter = (value: string, max: number) => `${charLength(value)} / ${max}`
 </template>
 
 <style scoped>
+/* `v-alert` has no height of its own in a flex column: the scrolling form would squeeze it flat. */
+.edit__offline {
+  flex: none;
+}
+
 .edit {
   display: flex;
   flex-direction: column;

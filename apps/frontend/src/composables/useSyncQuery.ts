@@ -32,13 +32,19 @@ export const syncQueryOptions = queryOptions({
   queryKey: ['sync'],
   queryFn: runSync,
   refetchOnWindowFocus: 'always',
+  refetchOnReconnect: 'always',
   refetchInterval: LIMITS.syncCheckIntervalMinutes * 60 * 1000,
 })
 
-/** Shows the local DB right away (`main.ts`), then syncs: like `initialData`, but already stale. */
+/**
+ * Shows the local DB right away (`main.ts`), then syncs: like `initialData`, but already stale.
+ * Not after signing out: offline, nothing else would stop the data being shown.
+ */
 export const seedFromLocalDb = async () => {
   const data = await readAll(await localDb())
-  if (data.userId) queryClient.setQueryData(syncQueryOptions.queryKey, data, { updatedAt: 0 })
+  if (data.userId && !data.signedOut) {
+    queryClient.setQueryData(syncQueryOptions.queryKey, data, { updatedAt: 0 })
+  }
 }
 
 export const useSyncQuery = () => useQuery(syncQueryOptions)

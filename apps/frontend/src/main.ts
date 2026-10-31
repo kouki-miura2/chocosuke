@@ -1,4 +1,4 @@
-import { VueQueryPlugin } from '@tanstack/vue-query'
+import { VueQueryPlugin, onlineManager } from '@tanstack/vue-query'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
@@ -13,7 +13,7 @@ import { useNotificationStore } from './stores/notification.ts'
 import { useViewStateStore } from './stores/view-state.ts'
 
 const pinia = createPinia()
-const app = createApp(App).use(pinia).use(router).use(vuetify).use(VueQueryPlugin, { queryClient })
+const app = createApp(App).use(pinia).use(vuetify).use(VueQueryPlugin, { queryClient })
 
 // Every API error ends up here (docs/spec.md "共通ルール > 画面": a snackbar). A lost session goes
 // back to the login screen, revised terms to the consent screen; a background sync that can't reach
@@ -34,10 +34,15 @@ onApiError((error, kind) => {
   useNotificationStore(pinia).show(errorMessage(error))
 })
 
+// TanStack Query assumes online until an event says otherwise, and none comes when opened offline.
+onlineManager.setOnline(navigator.onLine)
+
 // The install prompt can come before any screen asks for it ('設定 > アプリをインストール').
 listenForInstallPrompt()
 
 // The local DB first (view state, then the last synced data shown before the first sync returns).
+// The router comes after it: installing it starts the first navigation, and offline the guard goes
+// by whether the local DB has data.
 void Promise.all([useViewStateStore(pinia).load(), seedFromLocalDb()])
   .catch(() => {})
-  .finally(() => app.mount('#app'))
+  .finally(() => app.use(router).mount('#app'))

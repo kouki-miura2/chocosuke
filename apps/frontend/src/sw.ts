@@ -50,7 +50,11 @@ sw.addEventListener('message', (event) => {
 sw.addEventListener('activate', (event) => event.waitUntil(sw.clients.claim()))
 
 // Written out as `self.__WB_MANIFEST`: the build looks for exactly that to inject the file list.
-precacheAndRoute((self as unknown as ServiceWorkerScope).__WB_MANIFEST)
+// The icon font's CSS asks for `...woff2?v=7.4.47`, which is precached without the `v`: unmatched,
+// every icon is lost offline.
+precacheAndRoute((self as unknown as ServiceWorkerScope).__WB_MANIFEST, {
+  ignoreURLParametersMatching: [/^v$/],
+})
 cleanupOutdatedCaches()
 registerRoute(
   new NavigationRoute(createHandlerBoundToURL('index.html'), { denylist: [/^\/api\//] }),

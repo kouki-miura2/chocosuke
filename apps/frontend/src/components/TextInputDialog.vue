@@ -2,6 +2,8 @@
 import { charLength } from 'utils'
 import { computed, ref, watch } from 'vue'
 
+import { useNetworkStore } from '../stores/network.ts'
+
 // One trimmed name with a length limit (group name, member name).
 const props = defineProps<{
   title: string
@@ -12,6 +14,7 @@ const props = defineProps<{
 }>()
 const open = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ save: [value: string] }>()
+const network = useNetworkStore()
 
 const value = ref('')
 watch(open, (isOpen) => {
@@ -34,7 +37,7 @@ const error = computed(() => {
           :label="label"
           autofocus
           :error-messages="value ? (error ?? undefined) : undefined"
-          @keyup.enter="!error && emit('save', value.trim())"
+          @keyup.enter="!error && !network.offline && emit('save', value.trim())"
         />
       </v-card-text>
       <v-card-actions>
@@ -43,7 +46,7 @@ const error = computed(() => {
         <v-btn
           color="primary"
           text="保存"
-          :disabled="error !== null"
+          :disabled="error !== null || network.offline"
           :loading="loading"
           @click="emit('save', value.trim())"
         />

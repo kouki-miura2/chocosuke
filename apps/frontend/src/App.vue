@@ -4,9 +4,11 @@ import { useRoute } from 'vue-router'
 
 import { runningStandalone } from './composables/usePwaInstall.ts'
 import { usePwaUpdate } from './composables/usePwaUpdate.ts'
+import { useNetworkStore } from './stores/network.ts'
 import { useNotificationStore } from './stores/notification.ts'
 
 const notification = useNotificationStore()
+const network = useNetworkStore()
 const route = useRoute()
 const showNav = computed(() => route.meta.nav === true)
 const { needRefresh, update } = usePwaUpdate()
@@ -25,6 +27,11 @@ const tabs = [
 
 <template>
   <v-app>
+    <!-- docs/spec.md "共通ルール > オフライン": a bar at the top for as long as it lasts. -->
+    <v-system-bar v-if="network.offline" role="status" class="offline-bar">
+      <v-icon icon="mdi-wifi-off" size="14" class="mr-1" />
+      オフライン · 参照のみ（更新はできません）
+    </v-system-bar>
     <v-main>
       <router-view />
     </v-main>
@@ -73,6 +80,13 @@ const tabs = [
 .snackbar--info :deep(.v-snackbar__wrapper) {
   background: rgb(27, 28, 30, 0.92);
   color: #fff;
+}
+
+.offline-bar {
+  justify-content: center;
+  background: rgb(27, 28, 30);
+  color: #fff;
+  font-size: 12px;
 }
 
 .portrait-only {

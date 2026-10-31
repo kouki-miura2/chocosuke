@@ -4,6 +4,7 @@ import { ref } from 'vue'
 
 import type { Topic } from '../api/types.ts'
 import { useScheduleMutations } from '../composables/useScheduleMutations.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import ConfirmDialog from './ConfirmDialog.vue'
 
 // Topic management (docs/spec.md "予定 > トピック"): rename or delete. Topics are added from the
@@ -11,6 +12,7 @@ import ConfirmDialog from './ConfirmDialog.vue'
 defineProps<{ topics: Topic[]; scheduleName: string }>()
 const open = defineModel<boolean>({ required: true })
 const { renameTopic, removeTopic } = useScheduleMutations()
+const network = useNetworkStore()
 
 const editingId = ref<string | null>(null)
 const editingName = ref('')
@@ -26,7 +28,7 @@ const nameError = () => {
   return null
 }
 const saveEdit = async () => {
-  if (!editingId.value || nameError()) return
+  if (!editingId.value || nameError() || network.offline) return
   await renameTopic.mutateAsync({ id: editingId.value, name: editingName.value.trim() })
   editingId.value = null
 }
@@ -63,6 +65,7 @@ const confirmDelete = async () => {
                   icon="mdi-check"
                   variant="text"
                   :loading="renameTopic.isPending.value"
+                  :disabled="network.offline"
                   @click="saveEdit"
                 />
                 <v-btn icon="mdi-close" variant="text" @click="editingId = null" />
@@ -72,12 +75,14 @@ const confirmDelete = async () => {
                   icon="mdi-pencil-outline"
                   variant="text"
                   aria-label="名前を変更"
+                  :disabled="network.offline"
                   @click="startEdit(topic)"
                 />
                 <v-btn
                   icon="mdi-delete-outline"
                   variant="text"
                   aria-label="削除"
+                  :disabled="network.offline"
                   @click="deleting = topic"
                 />
               </template>

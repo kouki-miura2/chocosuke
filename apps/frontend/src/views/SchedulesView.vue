@@ -12,11 +12,13 @@ import { useScheduleMutations } from '../composables/useScheduleMutations.ts'
 import { scheduleColor } from '../lib/colors.ts'
 import { addMonthsToDate, monthStart } from '../lib/format.ts'
 import { useCalendarStore } from '../stores/calendar.ts'
+import { useNetworkStore } from '../stores/network.ts'
 
 // Schedule management (docs/spec.md "予定 > 画面"): personal and group schedules in the user's order.
 const app = useAppData()
 const mutations = useScheduleMutations()
 const cursor = useCalendarStore()
+const network = useNetworkStore()
 
 // The list is dragged locally, then the order is saved (and comes back with the sync).
 const list = ref<Schedule[]>([])
@@ -96,7 +98,13 @@ const confirmDelete = async () => {
     <p v-if="list.length === 0" class="text-medium-emphasis my-6">
       予定がありません。「予定を追加」から作成してください。
     </p>
-    <VueDraggable v-model="list" handle=".schedules__handle" :animation="150" @end="onDragEnd">
+    <VueDraggable
+      v-model="list"
+      handle=".schedules__handle"
+      :animation="150"
+      :disabled="network.offline"
+      @end="onDragEnd"
+    >
       <div v-for="schedule in list" :key="schedule.id" class="schedules__row">
         <v-icon icon="mdi-drag" class="schedules__handle" aria-label="並び替え" />
         <span class="schedules__swatch" :style="{ background: scheduleColor(schedule.color) }" />
@@ -118,6 +126,7 @@ const confirmDelete = async () => {
             <v-list-item
               prepend-icon="mdi-pencil-outline"
               title="編集"
+              :disabled="network.offline"
               @click="openEdit(schedule)"
             />
             <v-list-item
@@ -129,6 +138,7 @@ const confirmDelete = async () => {
               prepend-icon="mdi-delete-outline"
               title="削除"
               base-color="error"
+              :disabled="network.offline"
               @click="deleting = schedule"
             />
           </v-list>
@@ -141,6 +151,7 @@ const confirmDelete = async () => {
       variant="outlined"
       prepend-icon="mdi-plus"
       text="予定を追加"
+      :disabled="network.offline"
       @click="openAdd"
     />
 

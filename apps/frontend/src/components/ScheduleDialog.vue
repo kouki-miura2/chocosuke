@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import type { Schedule, Scope } from '../api/types.ts'
 import { SCHEDULE_COLORS } from '../lib/colors.ts'
+import { useNetworkStore } from '../stores/network.ts'
 
 // Adding or editing a schedule (docs/spec.md "予定 > 項目"). The scope is chosen only when adding.
 const props = defineProps<{
@@ -18,6 +19,7 @@ const props = defineProps<{
 }>()
 const open = defineModel<boolean>({ required: true })
 const emit = defineEmits<{ save: [value: { scope: Scope; name: string; color: string }] }>()
+const network = useNetworkStore()
 
 const scope = ref<Scope>('personal')
 const name = ref('')
@@ -96,7 +98,7 @@ const error = computed(() => {
         <v-btn
           color="primary"
           text="保存"
-          :disabled="error !== null"
+          :disabled="error !== null || network.offline"
           :loading="loading"
           @click="emit('save', { scope, name: name.trim(), color })"
         />

@@ -8,10 +8,12 @@ import InviteCard from '../components/InviteCard.vue'
 import TextInputDialog from '../components/TextInputDialog.vue'
 import { useAppData } from '../composables/useAppData.ts'
 import { useGroupMutations } from '../composables/useGroupMutations.ts'
+import { useNetworkStore } from '../stores/network.ts'
 
 // The group (docs/spec.md "グループ > 画面"): create one, or manage the one the user is in.
 const app = useAppData()
 const mutations = useGroupMutations()
+const network = useNetworkStore()
 
 const group = app.group
 const myId = computed(() => app.data.value.userId)
@@ -127,7 +129,7 @@ const joinedText = (member: Member) =>
             color="primary"
             variant="flat"
             text="作成"
-            :disabled="createError !== null"
+            :disabled="createError !== null || network.offline"
             :loading="mutations.create.isPending.value"
             @click="create"
           />
@@ -148,6 +150,7 @@ const joinedText = (member: Member) =>
           variant="text"
           size="small"
           aria-label="グループ名を変更"
+          :disabled="network.offline"
           @click="renamingGroup = true"
         />
       </div>
@@ -173,6 +176,7 @@ const joinedText = (member: Member) =>
                   icon="mdi-dots-vertical"
                   variant="text"
                   aria-label="メニュー"
+                  :disabled="network.offline"
                 />
               </template>
               <v-list density="compact">
@@ -209,6 +213,7 @@ const joinedText = (member: Member) =>
         variant="text"
         prepend-icon="mdi-delete-outline"
         text="グループを削除"
+        :disabled="network.offline"
         @click="pending = { kind: 'delete' }"
       />
     </template>

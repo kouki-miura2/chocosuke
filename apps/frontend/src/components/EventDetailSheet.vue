@@ -9,6 +9,7 @@ import { scheduleColor } from '../lib/colors.ts'
 import { notifyLabel } from '../lib/event-form.ts'
 import { formatDateTime, formatEventTime } from '../lib/format.ts'
 import { mapEmbedUrl, mapLinkUrl } from '../lib/map.ts'
+import { useNetworkStore } from '../stores/network.ts'
 import ConfirmDialog from './ConfirmDialog.vue'
 import ImageViewer from './ImageViewer.vue'
 
@@ -19,6 +20,7 @@ const emit = defineEmits<{ close: [] }>()
 const router = useRouter()
 const app = useAppData()
 const { remove } = useEventMutations()
+const network = useNetworkStore()
 
 const event = computed(() => (props.eventId ? app.eventById.value.get(props.eventId) : undefined))
 const schedule = computed(() => event.value && app.scheduleById.value.get(event.value.scheduleId))
@@ -51,11 +53,18 @@ const confirmDelete = async () => {
       <div class="detail__actions">
         <v-btn icon="mdi-close" variant="text" @click="emit('close')" />
         <v-spacer />
-        <v-btn icon="mdi-pencil-outline" variant="text" aria-label="編集" @click="edit" />
+        <v-btn
+          icon="mdi-pencil-outline"
+          variant="text"
+          aria-label="編集"
+          :disabled="network.offline"
+          @click="edit"
+        />
         <v-btn
           icon="mdi-delete-outline"
           variant="text"
           aria-label="削除"
+          :disabled="network.offline"
           @click="confirming = true"
         />
       </div>
@@ -91,6 +100,7 @@ const confirmDelete = async () => {
             <span>{{ event.location }}</span>
           </a>
           <iframe
+            v-if="!network.offline"
             :src="mapEmbedUrl(event.location)"
             :title="`${event.location} の地図`"
             class="detail__map"

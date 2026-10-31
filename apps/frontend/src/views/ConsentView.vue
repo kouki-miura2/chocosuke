@@ -7,11 +7,13 @@ import { useAuth } from '../composables/useAuth.ts'
 import { meQueryOptions } from '../composables/useMeQuery.ts'
 import { redirectTarget } from '../lib/redirect.ts'
 import { useAuthStore } from '../stores/auth.ts'
+import { useNetworkStore } from '../stores/network.ts'
 
 const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
 const auth = useAuthStore()
+const network = useNetworkStore()
 const { agree } = useAuth()
 
 const agreed = ref(false)
@@ -69,7 +71,7 @@ const cancel = async () => {
       color="primary"
       class="mt-4"
       text="同意してはじめる"
-      :disabled="!agreed"
+      :disabled="!agreed || network.offline"
       :loading="agree.isPending.value"
       @click="submit"
     />

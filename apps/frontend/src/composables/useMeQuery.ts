@@ -1,6 +1,6 @@
 import { queryOptions, useQuery } from '@tanstack/vue-query'
 
-import { call } from '../api/call.ts'
+import { ApiError, call } from '../api/call.ts'
 import { apiClient } from '../api/client.ts'
 import type { Me } from '../api/types.ts'
 
@@ -11,9 +11,12 @@ import type { Me } from '../api/types.ts'
 export const meQueryOptions = queryOptions({
   queryKey: ['me'],
   queryFn: async (): Promise<Me | null> => {
-    const res = await apiClient.api.me.$get()
-    if (res.status === 401) return null
-    return call(res)
+    try {
+      return await call(apiClient.api.me.$get())
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) return null
+      throw error
+    }
   },
   staleTime: Infinity,
 })
