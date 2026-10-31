@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { version } from '../../../../package.json'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import CsvDialog from '../components/CsvDialog.vue'
 import { useAccountMutations } from '../composables/useAccountMutations.ts'
@@ -71,8 +72,8 @@ const leave = async () => {
   <v-container class="settings">
     <h1 class="text-h6 font-weight-bold mb-2">設定</h1>
 
-    <v-list>
-      <v-list-subheader>表示</v-list-subheader>
+    <h2 class="settings__heading">表示</h2>
+    <v-list class="settings__group">
       <v-list-item title="月表示のイベント">
         <template #append>
           <v-btn-toggle v-model="viewState.monthStyle" mandatory density="compact">
@@ -89,8 +90,10 @@ const leave = async () => {
           </v-btn-toggle>
         </template>
       </v-list-item>
+    </v-list>
 
-      <v-list-subheader>通知</v-list-subheader>
+    <h2 class="settings__heading">通知</h2>
+    <v-list class="settings__group">
       <v-list-item title="この端末で通知を受け取る" :subtitle="pushNote" lines="two">
         <template #append>
           <v-btn
@@ -117,15 +120,19 @@ const leave = async () => {
           />
         </template>
       </v-list-item>
+    </v-list>
 
-      <v-list-subheader>データ</v-list-subheader>
+    <h2 class="settings__heading">データ</h2>
+    <v-list class="settings__group">
       <v-list-item
         prepend-icon="mdi-file-delimited-outline"
         title="CSVダウンロード"
         @click="csvOpen = true"
       />
+    </v-list>
 
-      <v-list-subheader>このアプリについて</v-list-subheader>
+    <h2 class="settings__heading">このアプリについて</h2>
+    <v-list class="settings__group">
       <v-list-item
         v-if="!pwa.installed.value"
         prepend-icon="mdi-cellphone-arrow-down"
@@ -139,8 +146,15 @@ const leave = async () => {
         title="プライバシーポリシー"
         to="/privacy"
       />
+      <v-list-item prepend-icon="mdi-information-outline" title="バージョン">
+        <template #append>
+          <span class="settings__version">{{ version }}</span>
+        </template>
+      </v-list-item>
+    </v-list>
 
-      <v-list-subheader>アカウント</v-list-subheader>
+    <h2 class="settings__heading">アカウント</h2>
+    <v-list class="settings__group">
       <v-list-item
         prepend-icon="mdi-logout"
         title="ログアウト"
@@ -220,5 +234,28 @@ const leave = async () => {
 <style scoped>
 .settings {
   max-width: 720px;
+}
+
+.settings__heading {
+  margin: 20px 4px 8px;
+  color: #5b5f68;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Each group is one outlined card, its rows split by a line. */
+.settings__group {
+  padding: 0;
+  border: 1px solid #e3e5ea;
+  border-radius: 12px;
+}
+
+.settings__group :deep(.v-list-item + .v-list-item) {
+  border-top: 1px solid #e3e5ea;
+}
+
+.settings__version {
+  color: #5b5f68;
+  font-size: 14px;
 }
 </style>

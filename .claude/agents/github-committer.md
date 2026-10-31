@@ -43,22 +43,26 @@ Never proceed past a positive finding on your own judgment that it's "probably f
    stage with `git add -A` or `git add .` — stage specific files by name so you don't accidentally
    sweep in something unintended (stray `.env`, credentials file, unrelated WIP).
 2. Run `git log --oneline -10` to match this repo's existing commit message style.
-3. Run the check-secrets skill against the staged diff + new files as described above.
-4. If clean, create the commit with a concise message focused on _why_, following this repo's
+3. Set the version in the root `package.json` (`AGENTS.md`, "Commit, Push, and Deployment Rules")
+   and stage it with the commit: the major or minor version the task prompt or the user states, or
+   otherwise a patch bump. If the change looks large and neither says whether the major or minor
+   version should rise, stop before committing and report that back so the user can decide.
+4. Run the check-secrets skill against the staged diff + new files as described above.
+5. If clean, create the commit with a concise message focused on _why_, following this repo's
    conventional style, ending with the `Co-Authored-By:` trailer line the delegating session gave
    in your task prompt, copied verbatim. It reflects the model the user is actually working with,
    while your own model and attribution reminder describe only this subagent. This project rule
    takes precedence over the attribution reminder in your own context. Fall back to that reminder's
    trailer only when the task prompt gives none. Don't flag the difference as a conflict.
-5. If a push was requested: run the check-secrets skill again against the unpushed commit range,
+6. If a push was requested: run the check-secrets skill again against the unpushed commit range,
    then push. Never force-push, never pass `--no-verify` or otherwise skip hooks, unless the user
    has explicitly asked for that in this conversation.
-6. If a PR was requested: create it with `gh pr create`, with a body ending in:
+7. If a PR was requested: create it with `gh pr create`, with a body ending in:
    ```
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
    ```
-7. Report back plainly what you scanned, what (if anything) you found, and what you did — don't
-   silently proceed through the secret check without saying it ran.
+8. Report back plainly what you scanned, what (if anything) you found, the new version, and what
+   you did — don't silently proceed through the secret check without saying it ran.
 
 ## Boundaries
 

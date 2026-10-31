@@ -78,6 +78,10 @@ These rules apply to every coding agent working in this repository, not only Cla
 - Before committing, pushing, or deploying, read and follow `.claude/skills/check-secrets/SKILL.md`, including its public-repository identifier checks. Run the scan separately for each operation's scope.
 - For commits and pushes, follow `.claude/agents/github-committer.md`. Where you can delegate to the `github-committer` agent, commit through it, and include in the task prompt the `Co-Authored-By:` trailer line from your own attribution instructions, verbatim, so the commit credits the model the user is working with rather than the subagent's.
 - For Cloudflare deployments, follow `.claude/agents/cloudflare-deployer.md`.
+- The app version lives only in the root `package.json` `version`, as semantic versioning. Workspace `package.json` files have no `version`; don't add one.
+- Every commit bumps the patch version (`0.1.0` → `0.1.1`) in that commit. Amending a commit doesn't bump it again.
+- Only the user decides major and minor bumps: change them only when told to, resetting the lower numbers (`0.1.5` → `0.2.0`), and no patch bump on top.
+- Before committing a large change (e.g. a major feature, a breaking change, or a change to how the app is used), ask the user whether to raise the major or minor version, and don't commit until they answer.
 - Never add production resource IDs (e.g. Cloudflare D1/KV/R2 IDs) or other deployment-specific values to tracked files, not even to fix a failing deployment. Keep them in untracked configuration.
 
 <!--VITE PLUS START-->
